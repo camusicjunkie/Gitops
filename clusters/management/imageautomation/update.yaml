@@ -1,0 +1,29 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: apps
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: |
+        chore(images): update automated image tags
+
+        {{ range $filename, $changes := .Changed.FileChanges -}}
+        - {{ $filename }}
+        {{ end -}}
+    push:
+      branch: image-updates
+  update:
+    path: ./apps
+    strategy: Setters

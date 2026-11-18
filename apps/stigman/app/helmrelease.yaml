@@ -1,0 +1,34 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: stigman
+  namespace: stigman
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: stigman
+  values:
+    mysql:
+      # We run our own mysql:8.4 StatefulSet (mysql.yaml); disable the bundled one.
+      enabled: false
+    api:
+      db:
+        # Our StatefulSet's Service in this namespace.
+        host: mysql.stigman.svc.cluster.local
+        existingSecret: mysql-secret
+        passwordKey: stigman-db-password
+      oidc:
+        # In-cluster discovery — the operator's service is keycloak-service (not
+        # "keycloak"), so override the chart default.
+        provider: http://keycloak-service.sso.svc.cluster.local:8080/realms/midworld
+        clientProvider: https://keycloak.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}/realms/midworld
+        clientId: stigman
+        jwtPrivilegesClaim: resource_access.stigman.roles
+      # JWKS hairpin: Keycloak's discovery advertises the external https jwks_uri.
+      # The api follows it, so map that FQDN to the istio gateway ClusterIP so the
+      # HTTPS fetch hairpins back through the gateway -> Keycloak.
+      hostAliases:
+        - ip: ${GATEWAY_CLUSTERIP}
+          hostnames:
+            - keycloak.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}

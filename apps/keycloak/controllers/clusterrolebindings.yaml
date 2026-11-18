@@ -1,0 +1,31 @@
+# Watching all namespaces (JOSDK_ALL_NAMESPACES) lists the keycloak CRs at
+# cluster scope. Upstream (operator.yml) binds its keycloak*-cluster-role
+# ClusterRoles via namespaced RoleBindings only (valid for JOSDK_WATCH_CURRENT),
+# so cluster-scoped list/watch 403s. Re-bind the same upstream ClusterRoles to
+# the operator SA at cluster scope.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloakcontroller-clusterrole-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: keycloakcontroller-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-operator
+    namespace: keycloak
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloakrealmimportcontroller-clusterrole-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: keycloakrealmimportcontroller-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: keycloak-operator
+    namespace: keycloak

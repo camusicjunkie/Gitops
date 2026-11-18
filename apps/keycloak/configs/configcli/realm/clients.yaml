@@ -1,0 +1,117 @@
+# All midworld realm app clients, consolidated into one file.
+#
+# keycloak-config-cli treats each imported file's `clients:` list as the
+# complete desired client list for that call, so splitting clients across
+# separate files (this used to be 15-stigman-client.yaml, 30-flux-web-client.yaml,
+# 50-gitlab-client.yaml) caused each subsequent file's import to delete the
+# previous file's client. See:
+# https://adorsys.github.io/keycloak-config-cli/config/partial-imports/
+# ("Last import wins. Client state depends on import order.")
+#
+# Keep every app client declared HERE, in this one file, going forward.
+realm: midworld
+clients:
+  - clientId: stigman
+    name: STIG Manager
+    enabled: true
+    protocol: openid-connect
+    publicClient: true
+    standardFlowEnabled: true
+    directAccessGrantsEnabled: true
+    implicitFlowEnabled: false
+    serviceAccountsEnabled: false
+    bearerOnly: false
+    consentRequired: false
+    frontchannelLogout: false
+    fullScopeAllowed: true
+    clientAuthenticatorType: client-secret
+    nodeReRegistrationTimeout: -1
+    redirectUris:
+      - https://stigman.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}/*
+    webOrigins:
+      - https://stigman.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}
+    attributes:
+      realm_client: "false"
+      oidc.ciba.grant.enabled: "false"
+      backchannel.logout.session.required: "true"
+      standard.token.exchange.enabled: "false"
+      frontchannel.logout.session.required: "true"
+      display.on.consent.screen: "false"
+      oauth2.device.authorization.grant.enabled: "true"
+      backchannel.logout.revoke.offline.tokens: "false"
+    defaultClientScopes:
+      - web-origins
+      - acr
+      - profile
+      - roles
+      - basic
+      - email
+    optionalClientScopes:
+      - address
+      - stig-manager:stig
+      - stig-manager
+      - stig-manager:op
+      - stig-manager:collection:read
+      - stig-manager:stig:read
+      - stig-manager:user:read
+      - stig-manager:collection
+      - stig-manager:op:read
+      - phone
+      - stig-manager:user
+      - organization
+      - offline_access
+      - microprofile-jwt
+
+  # `flux-web` confidential client (Flux UI SSO). Client SECRET is intentionally
+  # NOT here -- it's sealed at infrastructure/controllers/flux-web-client-sealed.yaml
+  # and injected to the operator. Keep config-cli's view of the secret consistent
+  # with that sealed value: either set `secret:` here from the same value, or let
+  # config-cli leave the Keycloak-generated secret alone. See README "Client secrets".
+  - clientId: flux-web
+    protocol: openid-connect
+    publicClient: false
+    standardFlowEnabled: true
+    redirectUris:
+      - https://flux.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}/oauth2/callback
+    webOrigins:
+      - https://flux.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}
+    defaultClientScopes:
+      - web-origins
+      - acr
+      - profile
+      - roles
+      - groups          # <- fragment 12, by name
+      - basic
+      - email
+      - offline_access  # flux-operator's web UI always requests this explicitly
+
+  # `headlamp` confidential client (Headlamp K8s web UI — OIDC SSO). The
+  # kube-apiserver is configured with --oidc-client-id=headlamp and
+  # --oidc-issuer-url=<midworld>; Headlamp forwards the user's id_token straight
+  # to the API server, so k8s RBAC applies PER USER (email claim -> user
+  # "oidc:<email>", groups claim -> "oidc:<group>"). See project-headlamp-ui.
+  # Client SECRET is set from $(HEADLAMP_CLIENT_SECRET), injected into the
+  # config-cli Job from the sealed secret `headlamp-client-secret` (sso ns). The
+  # SAME plaintext is sealed as `headlamp-oidc` (headlamp ns) for the Headlamp
+  # HelmRelease — rotating the secret means resealing BOTH.
+  - clientId: headlamp
+    name: Headlamp
+    protocol: openid-connect
+    publicClient: false
+    standardFlowEnabled: true
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    clientAuthenticatorType: client-secret
+    secret: "$(HEADLAMP_CLIENT_SECRET)"
+    redirectUris:
+      - https://headlamp.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}/oidc-callback
+    webOrigins:
+      - https://headlamp.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}
+    defaultClientScopes:
+      - web-origins
+      - acr
+      - profile
+      - roles
+      - groups          # emits `groups` claim -> apiserver --oidc-groups-claim
+      - basic
+      - email            # `email` claim -> apiserver --oidc-username-claim

@@ -1,0 +1,33 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: sso
+spec:
+  instances: 1
+  # Stock image; the operator runs the kc.sh build step (db=postgres etc.),
+  # so no custom image is needed.
+  db:
+    vendor: postgres
+    host: keycloak-db-rw.sso
+    port: 5432
+    database: keycloak
+    usernameSecret:
+      name: keycloak-db-user
+      key: username
+    passwordSecret:
+      name: keycloak-db-user
+      key: password
+  # Initial admin (used only for first cluster creation).
+  bootstrapAdmin:
+    user:
+      secret: keycloak-bootstrap-admin
+  # TLS terminates at the Istio gateway; Keycloak serves plain HTTP in-cluster.
+  http:
+    httpEnabled: true
+  # Trust the gateway's X-Forwarded-* headers (edge termination).
+  proxy:
+    headers: xforwarded
+  # External URL Keycloak advertises (OIDC discovery, redirects, admin console).
+  hostname:
+    hostname: https://keycloak.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}

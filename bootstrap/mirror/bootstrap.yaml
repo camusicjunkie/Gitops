@@ -1,0 +1,74 @@
+# Mirrors the bootstrap extras that `flux operator distro mirror` does not
+# cover. Render with envsubst before syncing:
+#   envsubst < bootstrap/mirror/bootstrap.yaml > /tmp/mirror-bootstrap.yaml
+#   flux operator distro mirror "${HARBOR_HOST}/${HARBOR_PROJECT}/flux" \
+#     --version 2.10.x --variant upstream-alpine --immutable
+#   flux mirror sync /tmp/mirror-bootstrap.yaml --no-progress
+apiVersion: mirror.plugin.fluxcd.io/v1beta1
+kind: Config
+
+charts:
+  - name: flux-operator
+    source: oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator
+    destination: oci://${HARBOR_HOST}/${HARBOR_PROJECT}/flux/charts
+    version: "*"
+    limit: 2
+  - name: gitlab-runner
+    source: https://charts.gitlab.io
+    destination: oci://${HARBOR_HOST}/${HARBOR_PROJECT}/gitlab/charts
+    version: "*"
+    limit: 2
+
+artifacts:
+  # flux-operator-bootstrap Job image (used by the OpenTofu bootstrap module)
+  - source: ghcr.io/controlplaneio-fluxcd/flux-operator-bootstrap
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/flux/flux-operator-bootstrap
+    selector:
+      semver: ">=0.8.0"
+      limit: 3
+    includeReferrers: true
+
+  # GitLab runner stack for bootstrap or CI automation jobs
+  - source: dhi.io/gitlab-runner
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/gitlab/gitlab-runner
+    includeReferrers: true
+    selector:
+      regex:
+        pattern: '^(?P<version>[0-9]+\.[0-9]+\.[0-9]+)$'
+        extract: "$version"
+      sortBy: semver
+      limit: 1
+  - source: dhi.io/gitlab-runner-helper
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/gitlab/gitlab-runner-helper
+    includeReferrers: true
+    selector:
+      regex:
+        pattern: '^(?P<version>[0-9]+\.[0-9]+\.[0-9]+)$'
+        extract: "$version"
+      sortBy: semver
+      limit: 1
+
+  # OpenTofu CI image for the bootstrap pipeline
+  - source: registry.gitlab.com/components/opentofu/gitlab-opentofu
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/gitlab/gitlab-opentofu
+    selector:
+      semver: ">=0.50.0"
+      limit: 1
+
+  # Trivy CVE DBs use stable mutable tags, so re-syncs must overwrite
+  - source: ghcr.io/aquasecurity/trivy-db
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/security/trivy-db
+    selector:
+      regex:
+        pattern: "^2$"
+      sortBy: numerical
+      limit: 1
+    overwrite: true
+  - source: ghcr.io/aquasecurity/trivy-java-db
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/security/trivy-java-db
+    selector:
+      regex:
+        pattern: "^1$"
+      sortBy: numerical
+      limit: 1
+    overwrite: true

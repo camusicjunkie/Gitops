@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  interval: 1h
+  url: oci://${HARBOR_REGISTRY}/${HARBOR_PROJECT}/harbor/charts/harbor-helm
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: copy
+  ref:
+    tag: "1.19.0" # {"$imagepolicy": "flux-system:harbor-chart:tag"}

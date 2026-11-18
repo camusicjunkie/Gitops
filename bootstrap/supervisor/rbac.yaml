@@ -1,0 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: platform-ci-cluster-manager
+  namespace: <vsphere-namespace>
+rules:
+  - apiGroups: ["cluster.x-k8s.io"]
+    resources: ["clusters"]
+    # Use ["get", "list", "watch"] if CAPI Cluster objects are managed externally.
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+    # Optionally restrict to known cluster kubeconfig secrets:
+    # resourceNames: ["<network>-staging-blue-kubeconfig", "<network>-staging-green-kubeconfig"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-ci-cluster-manager
+  namespace: <vsphere-namespace>
+subjects:
+  - kind: ServiceAccount
+    name: platform-ci
+    namespace: <vsphere-namespace>
+roleRef:
+  kind: Role
+  name: platform-ci-cluster-manager
+  apiGroup: rbac.authorization.k8s.io

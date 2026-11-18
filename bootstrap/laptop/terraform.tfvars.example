@@ -1,0 +1,4 @@
+kubeconfigpath    = "~/.kube/config"
+kubeconfigcontext = "docker-desktop"
+gitusername       = "git"
+gitpassword       = "glpat-xxxxxxxxxxxxxxxxxxxx"

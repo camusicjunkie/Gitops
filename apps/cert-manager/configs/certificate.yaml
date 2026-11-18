@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: blueandblack-wildcard
+  namespace: istio-system
+spec:
+  secretName: blueandblack-wildcard-tls
+  issuerRef:
+    name: ${CLUSTER_ISSUER}
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - "*.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}"
+    - "${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}"

@@ -1,0 +1,25 @@
+# Fragment: midworld realm GROUPS. All groups live in this ONE file.
+#
+# keycloak-config-cli imports each config file separately and, for every resource
+# TYPE a file declares, treats that file's list as the complete desired set for
+# that type (managed-resource purge). So a second file declaring `groups:` would
+# delete the groups declared here on its import, and vice-versa on the next run
+# (flip-flop). Same footgun as `clients:` — see 15-clients.yaml header. Keep every
+# group HERE.
+#
+# Group MEMBERSHIP (which users belong) is DATA — deliberately NOT here and left
+# untouched by config-cli (remote-state only purges config-cli-managed resources;
+# memberships aren't managed). Group names are plain (no path); the group-membership
+# mapper in 12-client-scopes.yaml has full.path=false.
+realm: midworld
+groups:
+  # Flux UI admins. k8s side: ClusterRoleBinding flux-web-admins -> Group
+  # "flux-admins" (PLAIN name — Flux UI impersonates the user with the claim value
+  # as-is) at infrastructure/controllers/flux-web-rbac.yaml.
+  - name: flux-admins
+
+  # Headlamp admins — cluster-admin via the Headlamp UI. Dedicated to Headlamp,
+  # NOT shared with any other app. k8s side: ClusterRoleBinding headlamp-admins ->
+  # Group "oidc:headlamp-admins" (the kube-apiserver adds the "oidc:" prefix via
+  # --oidc-groups-prefix) at infrastructure/controllers/headlamp-rbac.yaml.
+  - name: headlamp-admins

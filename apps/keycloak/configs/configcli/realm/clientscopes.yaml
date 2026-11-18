@@ -1,0 +1,91 @@
+realm: midworld
+clientScopes:
+  - name: stig-manager:collection:read
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: stig-manager:stig:read
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: stig-manager:user
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: stig-manager:op:read
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: stig-manager:user:read
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: stig-manager:stig
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: stig-manager
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: stig-manager:collection
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: stig-manager:op
+    description: ''
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'true'
+      gui.order: ''
+      consent.screen.text: ''
+  - name: groups
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'true'
+      display.on.consent.screen: 'false'
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          full.path: 'false'
+          claim.name: groups
+          multivalued: 'true'
+          id.token.claim: 'true'
+          access.token.claim: 'true'
+          userinfo.token.claim: 'true'

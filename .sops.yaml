@@ -1,0 +1,5 @@
+creation_rules:
+  - path_regex: \.ya?ml$
+    encrypted_regex: ^(data|stringData)$
+    # Replace with your age public key (generated via `age-keygen -o age.agekey`)
+    age: age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -1,0 +1,10 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: harbor-chart
+  namespace: flux-system
+spec:
+  image: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/harbor/charts/harbor-helm
+  interval: 10m
+  secretRef:
+    name: harbor-pull

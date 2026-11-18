@@ -1,0 +1,11 @@
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Provider
+metadata:
+  name: gitlab
+  namespace: flux-system
+spec:
+  # Supported types include: gitlab, slack, msteams, generic, generic-hmac
+  type: gitlab
+  address: "${GIT_REPO_URL}"
+  secretRef:
+    name: gitlab-notification

@@ -1,0 +1,34 @@
+# Ensures application namespaces are enrolled in Istio ambient mode.
+# Start with KYVERNO_VALIDATION_ACTION=Audit in settings.yaml, then switch to Enforce.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-ambient-dataplane
+spec:
+  validationFailureAction: ${KYVERNO_VALIDATION_ACTION}
+  background: true
+  rules:
+    - name: require-ambient-label
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - flux-system
+                - istio-system
+                - cert-manager
+                - kyverno
+                - cnpg-system
+                - kube-system
+                - kube-public
+                - kube-node-lease
+      validate:
+        message: "Application namespaces must set label istio.io/dataplane-mode: ambient."
+        pattern:
+          metadata:
+            labels:
+              istio.io/dataplane-mode: ambient

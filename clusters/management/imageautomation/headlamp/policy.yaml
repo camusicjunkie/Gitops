@@ -1,0 +1,11 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: headlamp-chart
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: headlamp-chart
+  policy:
+    semver:
+      range: "*"

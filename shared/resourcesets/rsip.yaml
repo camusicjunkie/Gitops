@@ -1,0 +1,10 @@
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSetInputProvider
+metadata:
+  name: apps
+  namespace: flux-system
+spec:
+  type: ExternalArtifact
+  selector:
+    matchLabels:
+      source.extensions.fluxcd.io/generator: apps

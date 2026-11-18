@@ -1,0 +1,83 @@
+---
+# keycloak-config-cli — idempotently reconciles the midworld realm CONFIG from Git
+# via the Keycloak admin API. Replaces the create-only KeycloakRealmImport (which
+# cannot add the gitlab/flux-web clients to an already-existing realm).
+#
+# Runs as a CronJob (re-reconciles on a schedule) AND can be triggered ad-hoc:
+#   kubectl create job -n sso --from=cronjob/keycloak-config-cli kcc-manual
+#
+# remote-state ON (default, per upstream docs) => purges ONLY resources config-cli
+# manages. Users, group MEMBERSHIPS, and passwords are NOT in the config => left
+# untouched (config vs data boundary; see reference-keycloak-config-management).
+#
+# IMPORTANT: keycloak-config-cli treats each imported file's `clients:` list as the
+# complete desired client list for that call -- this is true regardless of the
+# remote-state setting. Splitting clients across multiple files (previously
+# 15-stigman/30-flux-web/50-gitlab) caused each subsequent file to delete the
+# previous file's client. All app clients now live in one file (15-clients.yaml)
+# for this reason. See https://adorsys.github.io/keycloak-config-cli/config/partial-imports/
+# ("Last import wins. Client state depends on import order.") Do not re-split
+# clients across files without re-reading that doc.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: keycloak-config-cli
+  namespace: sso
+spec:
+  schedule: "*/30 * * * *"        # reconcile every 30 min; also runnable on demand
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: keycloak-config-cli
+              # Verified against quay.io/adorsys/keycloak-config-cli tags at
+              # activation: 6.5.1-26.0.0 (the previous placeholder) doesn't exist.
+              # 6.5.1-26.5.5 is the closest available patch to the running
+              # Keycloak (26.6.3). Bump deliberately alongside future KC upgrades.
+              image: quay.io/adorsys/keycloak-config-cli:6.5.1-26.5.5 # {"$imagepolicy": "flux-system:keycloak-config-cli:tag"}
+              env:
+                - name: KEYCLOAK_URL
+                  value: http://keycloak-service.sso.svc.cluster.local:8080
+                - name: KEYCLOAK_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: keycloak-config-cli-admin
+                      key: username
+                - name: KEYCLOAK_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: keycloak-config-cli-admin
+                      key: password
+                - name: KEYCLOAK_CLIENTID
+                  value: admin-cli
+                # Secret for the `headlamp` confidential client, substituted into
+                # realm-config/15-clients.yaml as $(HEADLAMP_CLIENT_SECRET).
+                # Sourced from the sealed secret headlamp-client-secret (sso ns);
+                # the same plaintext is sealed as headlamp-oidc (headlamp ns).
+                - name: HEADLAMP_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: headlamp-client-secret
+                      key: client-secret
+                - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+                  value: "true"
+                - name: IMPORT_FILES_LOCATIONS
+                  value: /config/*.yaml
+                - name: IMPORT_REMOTESTATE_ENABLED
+                  value: "true"            # purge only config-cli-managed resources
+                - name: IMPORT_VARSUBSTITUTION_ENABLED
+                  value: "true"            # allow $(env)/placeholder substitution
+              volumeMounts:
+                - name: realm-config
+                  mountPath: /config
+                  readOnly: true
+          volumes:
+            - name: realm-config
+              configMap:
+                name: midworld-realm-config

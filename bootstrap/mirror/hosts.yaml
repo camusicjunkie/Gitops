@@ -1,0 +1,26 @@
+# Auth for `flux mirror login`. Render with envsubst before login:
+#   envsubst < bootstrap/mirror/hosts.yaml > /tmp/hosts.yaml
+#   flux mirror login -f /tmp/hosts.yaml
+apiVersion: mirror.plugin.fluxcd.io/v1beta1
+kind: Config
+hosts:
+  - host: "${HARBOR_HOST}"
+    username: "${HARBOR_USERNAME}"
+    credential:
+      value: "${HARBOR_PASSWORD}"
+  - host: registry1.dso.mil
+    username: "${IRON_BANK_USER}"
+    credential:
+      value: "${IRON_BANK_TOKEN}"
+  - host: dhi.io
+    username: "${DHI_USER}"
+    credential:
+      value: "${DHI_TOKEN}"
+  - host: docker.io
+    username: "${DHI_USER}"
+    credential:
+      value: "${DHI_TOKEN}"
+  - host: registry-1.docker.io
+    username: "${DHI_USER}"
+    credential:
+      value: "${DHI_TOKEN}"

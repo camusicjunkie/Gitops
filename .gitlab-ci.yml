@@ -1,0 +1,133 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CLUSTER                     # manual bootstrap run: set CLUSTER=<network>-<env>-<color>
+
+default:
+  image: $TOFU_CI_IMAGE               # CI image with tofu, kubectl, curl, and provider mirror
+
+variables:
+  TF_ROOT: bootstrap/vks
+  GATEWAY_NS: istio-system
+  GATEWAY_SVC: main-gateway-istio     # Istio names the generated Service <gateway>-istio
+  TF_VAR_cluster_name: $CLUSTER
+  TF_VAR_kubeconfig_path: /tmp/target.kubeconfig
+  TF_VAR_harbor_registry: $HARBOR_HOST
+  TF_VAR_harbor_project: $HARBOR_PROJECT
+  TF_VAR_harbor_robot_username: $HARBOR_USERNAME
+  TF_VAR_harbor_robot_token: $HARBOR_PASSWORD
+  TF_VAR_git_repo_url: ${CI_PROJECT_URL}.git
+  TF_HTTP_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${CLUSTER}
+  TF_HTTP_LOCK_ADDRESS: ${TF_HTTP_ADDRESS}/lock
+  TF_HTTP_UNLOCK_ADDRESS: ${TF_HTTP_ADDRESS}/lock
+  TF_HTTP_LOCK_METHOD: POST
+  TF_HTTP_UNLOCK_METHOD: DELETE
+  TF_HTTP_USERNAME: gitlab-ci-token
+  TF_HTTP_PASSWORD: ${CI_JOB_TOKEN}
+
+stages: [validate, plan, apply, verify]
+
+# Waits for CAPI Cluster readiness on the Supervisor, fetches its admin kubeconfig,
+# and always cleans up the temporary kubeconfig file on exit.
+.cluster-access:
+  resource_group: $CLUSTER            # serialize runs targeting the same cluster/state
+  before_script:
+    - kubectl --kubeconfig "$SUPERVISOR_KUBECONFIG" -n "$VSPHERE_NS"
+        wait "cluster/${CLUSTER}" --for=condition=Ready --timeout=45m
+    - kubectl --kubeconfig "$SUPERVISOR_KUBECONFIG" -n "$VSPHERE_NS"
+        get secret "${CLUSTER}-kubeconfig" -o jsonpath='{.data.value}'
+        | base64 -d > /tmp/target.kubeconfig
+    - chmod 600 /tmp/target.kubeconfig
+  after_script:
+    - rm -f /tmp/target.kubeconfig
+
+# Parallel validation jobs (MRs and default-branch pushes without CLUSTER set)
+.validate-rules:
+  stage: validate
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && !$CLUSTER
+
+validate-tofu:
+  extends: .validate-rules
+  script:
+    - cd "$TF_ROOT"
+    - tofu fmt -check -recursive
+    - tofu init -backend=false -input=false
+    - tofu validate
+
+validate-manifests:
+  extends: .validate-rules
+  script:
+    - kubectl kustomize clusters/laptop > /dev/null
+    - kubectl kustomize clusters/management > /dev/null
+    - kubectl kustomize clusters/staging > /dev/null
+    - kubectl kustomize clusters/production > /dev/null
+    - kubectl kustomize shared/resourcesets > /dev/null
+    - kubectl kustomize shared/notifications > /dev/null
+    - kubectl kustomize shared/receiver > /dev/null
+    - echo "All cluster and shared manifests validated successfully."
+
+plan:
+  stage: plan
+  extends: .cluster-access
+  rules:
+    - if: $CLUSTER
+  script:
+    - cd "$TF_ROOT"
+    - tofu init -input=false
+    - tofu plan -input=false
+
+apply:
+  stage: apply
+  extends: .cluster-access
+  interruptible: false                # never auto-cancel an in-flight OpenTofu apply
+  rules:
+    - if: $CLUSTER =~ /(production|management)/
+      when: manual                    # human gate for production and management clusters
+    - if: $CLUSTER
+  environment:
+    name: $CLUSTER
+  script:
+    - cd "$TF_ROOT"
+    - tofu init -input=false
+    - tofu apply -input=false -auto-approve
+
+# Runs on all bootstrapped clusters to verify FluxInstance and Kustomizations reconcile
+verify-flux:
+  stage: verify
+  extends: .cluster-access
+  needs: [apply]
+  rules:
+    - if: $CLUSTER
+  script:
+    - export KUBECONFIG=/tmp/target.kubeconfig
+    - kubectl -n flux-system wait fluxinstance/flux --for=condition=Ready --timeout=15m
+    - kubectl -n flux-system wait kustomizations.kustomize.toolkit.fluxcd.io --all
+        --for=condition=Ready --timeout=30m
+
+# Runs only on workload clusters (staging/production) that expose an Istio Gateway
+smoke-test:
+  stage: verify
+  extends: .cluster-access
+  needs: [verify-flux]
+  rules:
+    - if: $CLUSTER && $CLUSTER !~ /management/
+  script:
+    - export KUBECONFIG=/tmp/target.kubeconfig
+    # Read the domain from the cluster itself, so Git and OpenTofu stay the only sources
+    - SUBDOMAIN=$(kubectl -n flux-system get configmap cluster-settings -o jsonpath='{.data.APPS_SUBDOMAIN}')
+    - NETWORK=$(kubectl -n flux-system get configmap flux-runtime-info -o jsonpath='{.data.NETWORK_DOMAIN}')
+    - VIP=$(kubectl -n "$GATEWAY_NS" get service "$GATEWAY_SVC" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    # Check each app under its real public hostname, pointed at this cluster, without touching DNS
+    - |
+      for app in $SMOKE_APPS; do
+        host="${app}.${SUBDOMAIN}.${NETWORK}"
+        curl --fail --silent --show-error --output /dev/null \
+          --cacert "$INTERNAL_CA_BUNDLE" \
+          --resolve "${host}:443:${VIP}" \
+          "https://${host}/"
+        echo "OK ${host}"
+      done

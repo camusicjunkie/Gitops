@@ -1,0 +1,33 @@
+realm: midworld
+scopeMappings:
+  - clientScope: offline_access
+    roles:
+      - offline_access
+clientScopeMappings:
+  stigman:
+    - clientScope: stig-manager:collection:read
+      roles:
+        - user
+    - clientScope: stig-manager:stig:read
+      roles:
+        - user
+    - clientScope: stig-manager:user
+      roles:
+        - admin
+        - user
+    - clientScope: stig-manager:op:read
+      roles:
+        - user
+    - clientScope: stig-manager:user:read
+      roles:
+        - user
+    - clientScope: stig-manager:stig
+      roles:
+        - admin
+    - clientScope: stig-manager:collection
+      roles:
+        - admin
+        - user
+    - clientScope: stig-manager:op
+      roles:
+        - admin

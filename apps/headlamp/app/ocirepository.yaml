@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: headlamp
+  namespace: headlamp
+spec:
+  interval: 1h
+  url: oci://${HARBOR_REGISTRY}/${HARBOR_PROJECT}/headlamp/charts/headlamp
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: copy
+  ref:
+    tag: "0.45.0" # {"$imagepolicy": "flux-system:headlamp-chart:tag"}

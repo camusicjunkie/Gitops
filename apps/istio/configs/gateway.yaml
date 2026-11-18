@@ -1,0 +1,32 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: main-gateway
+  namespace: istio-system
+spec:
+  gatewayClassName: istio
+  infrastructure:
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: main-gateway-svc-options
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}"
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: blueandblack-wildcard-tls
+      allowedRoutes:
+        namespaces:
+          from: All

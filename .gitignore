@@ -1,0 +1,24 @@
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Kustomize / build artifacts
+*.tmp
+.bundle.yaml
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+.terraformrc
+terraform.rc

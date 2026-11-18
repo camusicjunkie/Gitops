@@ -1,0 +1,16 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: istio-system
+      sectionName: https
+  hostnames:
+    - harbor.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}
+  rules:
+    - backendRefs:
+        - name: harbor
+          port: 80

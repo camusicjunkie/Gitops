@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-backup
+  namespace: stigman
+  labels:
+    app: mysql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mysql-backup
+  namespace: stigman
+  annotations:
+    kustomize.toolkit.fluxcd.io/substitute: disabled
+  labels:
+    app: mysql
+spec:
+  # Daily at 02:00.
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: mysql
+            component: backup
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: mysqldump
+              image: mysql:8.4 # {"$imagepolicy": "flux-system:mysql:tag"}
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: MYSQL_ROOT_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: mysql-secret
+                      key: root-db-password
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  TS=$(date +%Y%m%d-%H%M%S)
+                  OUT="/backup/stigman-${TS}.sql.gz"
+                  echo "Dumping stigman -> ${OUT}"
+                  mysqldump -h mysql -u root -p"${MYSQL_ROOT_PASSWORD}" \
+                    --single-transaction --routines --triggers --events \
+                    stigman | gzip > "${OUT}"
+                  echo "Backup complete: $(ls -lh "${OUT}")"
+                  echo "Pruning to last 7 backups..."
+                  ls -1t /backup/stigman-*.sql.gz | tail -n +8 | xargs -r rm -f
+                  echo "Remaining backups:"; ls -1t /backup/stigman-*.sql.gz
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: mysql-backup

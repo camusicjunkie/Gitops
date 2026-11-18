@@ -1,0 +1,240 @@
+# Mirror inventory for steady-state platform controllers and apps under apps/.
+# Render with envsubst before syncing:
+#   envsubst < bootstrap/mirror/platform.yaml > /tmp/mirror-platform.yaml
+#   flux mirror sync /tmp/mirror-platform.yaml --no-progress
+#
+# Notes:
+# - Gateway API CRDs are vendored in-repo (apps/istio/controllers/gatewayapi/crds.yaml).
+# - Secrets use Flux-native SOPS + age (no sealed-secrets controller).
+apiVersion: mirror.plugin.fluxcd.io/v1beta1
+kind: Config
+
+artifacts:
+  # apps/cert-manager
+  - source: dhi.io/cert-manager-chart
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/cert-manager/charts/cert-manager
+    includeReferrers: true
+    selector:
+      regex:
+        pattern: '^(?P<version>1\.21\.[0-9]+)$'
+        extract: "$version"
+      sortBy: semver
+      limit: 1
+  - source: dhi.io/cert-manager-controller
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/cert-manager/cert-manager-controller
+    includeReferrers: true
+    selector:
+      regex:
+        pattern: '^(?P<version>1\.21\.[0-9]+)$'
+        extract: "$version"
+      sortBy: semver
+      limit: 1
+  - source: dhi.io/cert-manager-webhook
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/cert-manager/cert-manager-webhook
+    includeReferrers: true
+    selector:
+      regex:
+        pattern: '^(?P<version>1\.21\.[0-9]+)$'
+        extract: "$version"
+      sortBy: semver
+      limit: 1
+  - source: dhi.io/cert-manager-cainjector
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/cert-manager/cert-manager-cainjector
+    includeReferrers: true
+    selector:
+      regex:
+        pattern: '^(?P<version>1\.21\.[0-9]+)$'
+        extract: "$version"
+      sortBy: semver
+      limit: 1
+  - source: dhi.io/cert-manager-startupapicheck
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/cert-manager/cert-manager-startupapicheck
+    includeReferrers: true
+    selector:
+      regex:
+        pattern: '^(?P<version>1\.21\.[0-9]+)$'
+        extract: "$version"
+      sortBy: semver
+      limit: 1
+
+  # apps/cnpg
+  - source: dhi.io/cloudnative-pg-chart
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/cnpg/charts/cloudnative-pg
+    includeReferrers: true
+    selector:
+      semver: ">=0.29.0 <0.30.0"
+      limit: 1
+  - source: dhi.io/cloudnative-pg
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/cnpg/cloudnative-pg
+    includeReferrers: true
+    selector:
+      regex:
+        pattern: '^(?P<version>1\.30\.[0-9]+)$'
+        extract: "$version"
+      sortBy: semver
+      limit: 1
+
+  # apps/kyverno
+  - source: dhi.io/kyverno-chart
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/kyverno/charts/kyverno
+    includeReferrers: true
+    selector:
+      semver: ">=3.9.0 <3.10.0"
+      limit: 1
+  - source: dhi.io/kyverno-background-controller
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/kyverno/background-controller
+    includeReferrers: true
+    selector:
+      semver: ">=1.19.0 <1.20.0"
+      limit: 1
+  - source: dhi.io/kyverno-cleanup-controller
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/kyverno/cleanup-controller
+    includeReferrers: true
+    selector:
+      semver: ">=1.19.0 <1.20.0"
+      limit: 1
+  - source: dhi.io/kyverno
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/kyverno/kyverno
+    includeReferrers: true
+    selector:
+      semver: ">=1.19.0 <1.20.0"
+      limit: 1
+  - source: dhi.io/kyverno-cli
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/kyverno/kyverno-cli
+    includeReferrers: true
+    selector:
+      semver: ">=1.19.0 <1.20.0"
+      limit: 1
+  - source: dhi.io/kyverno-init
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/kyverno/kyvernopre
+    includeReferrers: true
+    selector:
+      semver: ">=1.19.0 <1.20.0"
+      limit: 1
+  - source: dhi.io/kyverno-readiness-checker
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/kyverno/readiness-checker
+    includeReferrers: true
+    selector:
+      semver: ">=1.19.0 <1.20.0"
+      limit: 1
+  - source: dhi.io/kyverno-reports-controller
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/kyverno/reports-controller
+    includeReferrers: true
+    selector:
+      semver: ">=1.19.0 <1.20.0"
+      limit: 1
+
+  # apps/istio
+  - source: dhi.io/istio-base-chart
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/charts/base
+    includeReferrers: true
+    selector:
+      semver: ">=1.30.0 <1.31.0"
+      limit: 1
+  - source: dhi.io/istio-discovery-chart
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/charts/istiod
+    includeReferrers: true
+    selector:
+      semver: ">=1.30.0 <1.31.0"
+      limit: 1
+  - source: dhi.io/istio-cni-chart
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/charts/cni
+    includeReferrers: true
+    selector:
+      semver: ">=1.30.0 <1.31.0"
+      limit: 1
+  - source: dhi.io/istio-ztunnel-chart
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/charts/ztunnel
+    includeReferrers: true
+    selector:
+      semver: ">=1.30.0 <1.31.0"
+      limit: 1
+  - source: dhi.io/istio-cni
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/cni
+    includeReferrers: true
+    selector:
+      semver: ">=1.30.0 <1.31.0"
+      limit: 1
+  - source: dhi.io/istio-ztunnel
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/ztunnel
+    includeReferrers: true
+    selector:
+      semver: ">=1.30.0 <1.31.0"
+      limit: 1
+  - source: dhi.io/istio-pilot
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/pilot
+    includeReferrers: true
+    selector:
+      semver: ">=1.30.0 <1.31.0"
+      limit: 1
+  - source: dhi.io/istio-proxyv2
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/proxyv2
+    includeReferrers: true
+    selector:
+      semver: ">=1.30.0 <1.31.0"
+      limit: 1
+
+  # apps/keycloak
+  - source: dhi.io/keycloak
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/keycloak/keycloak
+    includeReferrers: true
+    selector:
+      semver: ">=26.7.0 <27.0.0"
+      limit: 1
+  - source: quay.io/keycloak/keycloak-operator
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/keycloak/keycloak-operator
+    selector:
+      semver: "=26.6.3"
+      limit: 1
+  - source: quay.io/adorsys/keycloak-config-cli
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/sso/keycloak-config-cli
+    selector:
+      regex:
+        pattern: '^6\.5\.1-26\.5\.5$'
+      limit: 1
+  - source: ghcr.io/cloudnative-pg/postgresql
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/cnpg/cnpg-postgresql
+    selector:
+      semver: "=16.14"
+      limit: 1
+  - source: dhi.io/postgres
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/postgres/postgresql
+    includeReferrers: true
+    selector:
+      semver: ">=16 <17"
+      limit: 1
+
+  # apps/harbor, apps/headlamp, apps/metrics-server
+  - source: oci://registry-1.docker.io/goharbor/harbor-helm
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/harbor/charts/harbor-helm
+    selector:
+      semver: "1.19.x"
+      limit: 1
+  - source: oci://ghcr.io/headlamp-k8s/charts/headlamp
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/headlamp/charts/headlamp
+    selector:
+      semver: "*"
+      limit: 1
+  - source: oci://registry-1.docker.io/bitnamicharts/metrics-server
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/metrics-server/charts/metrics-server
+    selector:
+      semver: "*"
+      limit: 1
+
+  # apps/stigman
+  - source: dhi.io/mysql
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/stigman/mysql8
+    includeReferrers: true
+    selector:
+      semver: ">=8.4.0 <8.5.0"
+      limit: 1
+  - source: docker.io/nuwcdivnpt/stig-manager
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/stigman/stig-manager
+    selector:
+      semver: ">=1.6.0 <1.7.0"
+      limit: 1
+  - source: oci://registry.gitlab.com/gitops55624/flux/stigman
+    destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/stigman/charts/stigman
+    selector:
+      semver: "*"
+      limit: 1

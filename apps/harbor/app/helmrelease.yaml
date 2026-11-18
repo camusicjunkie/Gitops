@@ -1,0 +1,29 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: harbor
+  values:
+    externalURL: https://harbor.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}
+    expose:
+      type: clusterIP
+      tls:
+        enabled: false
+    persistence:
+      persistentVolumeClaim:
+        registry:
+          storageClass: standard
+        jobservice:
+          jobLog:
+            storageClass: standard
+        database:
+          storageClass: standard
+        redis:
+          storageClass: standard
+        trivy:
+          storageClass: standard

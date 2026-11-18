@@ -1,0 +1,11 @@
+apiVersion: source.extensions.fluxcd.io/v1beta1
+kind: ArtifactGenerator
+metadata:
+  name: apps
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  pathPattern: "apps/{app}/app"

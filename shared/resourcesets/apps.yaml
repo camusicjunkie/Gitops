@@ -1,0 +1,51 @@
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSet
+metadata:
+  name: apps
+  namespace: flux-system
+spec:
+  inputsFrom:
+    - kind: ResourceSetInputProvider
+      name: apps
+  resources:
+    - apiVersion: kustomize.toolkit.fluxcd.io/v1
+      kind: Kustomization
+      metadata:
+        name: << inputs.app >>
+        namespace: << inputs.provider.namespace >>
+      spec:
+        interval: 1h
+        retryInterval: 2m
+        timeout: 5m
+        prune: true
+        sourceRef:
+          kind: GitRepository
+          name: flux-system
+        path: ./apps/<< inputs.app >>/app
+        decryption:
+          provider: sops
+          secretRef:
+            name: sops-age
+        postBuild:
+          substituteFrom:
+            - kind: ConfigMap
+              name: cluster-settings
+            - kind: ConfigMap
+              name: flux-runtime-info
+              optional: true
+        patches:
+          - target:
+              kind: HelmRelease
+              labelSelector: helm-defaults notin (disabled)
+            patch: |
+              apiVersion: helm.toolkit.fluxcd.io/v2
+              kind: HelmRelease
+              metadata:
+                name: _
+              spec:
+                install:
+                  crds: Create
+                upgrade:
+                  crds: CreateReplace
+                driftDetection:
+                  mode: enabled

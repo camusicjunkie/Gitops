@@ -1,0 +1,20 @@
+realm: midworld
+roles:
+  realm:
+    - name: default-roles-midworld
+      composite: true
+      composites:
+        realm:
+          - offline_access
+          - uma_authorization
+        client:
+          stigman:
+            - user
+          account:
+            - manage-account
+            - view-profile
+  client:
+    stigman:
+      - name: admin
+      - name: user
+      - name: create_collection

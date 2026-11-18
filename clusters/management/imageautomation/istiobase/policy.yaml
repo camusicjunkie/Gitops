@@ -1,0 +1,11 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: istio-base-chart
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: istio-base-chart
+  policy:
+    semver:
+      range: "*"

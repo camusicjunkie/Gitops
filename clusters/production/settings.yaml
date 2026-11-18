@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-settings
+  namespace: flux-system
+  labels:
+    reconcile.fluxcd.io/watch: Enabled
+data:
+  APPS_SUBDOMAIN: apps
+  CLUSTER_ISSUER: internal-ca
+  MTLS_MODE: PERMISSIVE
+  KYVERNO_VALIDATION_ACTION: Audit
+  GATEWAY_CLUSTERIP: "10.96.150.65"

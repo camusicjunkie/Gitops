@@ -1,0 +1,43 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: rewrite-image-registry-to-harbor
+spec:
+  rules:
+    - name: rewrite-containers
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+      mutate:
+        foreach:
+          - list: "request.object.spec.containers"
+            preconditions:
+              all:
+                - key: "{{ element.image }}"
+                  operator: NotEquals
+                  value: "${HARBOR_REGISTRY}/*"
+            patchStrategicMerge:
+              spec:
+                containers:
+                  - name: "{{ element.name }}"
+                    image: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/{{ request.object.metadata.namespace }}/{{ regex_replace_all('^(.*/)?([^/]+)$', element.image, '$2') }}"
+          - list: "request.object.spec.initContainers[]"
+            preconditions:
+              all:
+                - key: "{{ element.image }}"
+                  operator: NotEquals
+                  value: "${HARBOR_REGISTRY}/*"
+            patchStrategicMerge:
+              spec:
+                initContainers:
+                  - name: "{{ element.name }}"
+                    image: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/{{ request.object.metadata.namespace }}/{{ regex_replace_all('^(.*/)?([^/]+)$', element.image, '$2') }}"

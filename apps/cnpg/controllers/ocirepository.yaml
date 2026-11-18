@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: cnpg
+  namespace: cnpg-system
+spec:
+  interval: 1h
+  url: oci://${HARBOR_REGISTRY}/${HARBOR_PROJECT}/cnpg/charts/cloudnative-pg
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: copy
+  ref:
+    tag: "0.29.0" # {"$imagepolicy": "flux-system:cnpg-chart:tag"}

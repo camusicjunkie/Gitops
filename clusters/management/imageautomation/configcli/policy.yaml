@@ -1,0 +1,14 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: keycloak-config-cli
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: keycloak-config-cli
+  filterTags:
+    pattern: '^6\.5\.1-(?P<kc>[0-9]+\.[0-9]+\.[0-9]+)$'
+    extract: "$kc"
+  policy:
+    semver:
+      range: "*"

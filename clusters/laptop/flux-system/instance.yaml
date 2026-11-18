@@ -1,0 +1,57 @@
+apiVersion: fluxcd.controlplane.io/v1
+kind: FluxInstance
+metadata:
+  name: flux
+  namespace: flux-system
+  annotations:
+    fluxcd.controlplane.io/reconcile: "enabled"
+    fluxcd.controlplane.io/reconcileEvery: "1h"
+    fluxcd.controlplane.io/reconcileArtifactEvery: "10m"
+    fluxcd.controlplane.io/reconcileTimeout: "5m"
+spec:
+  distribution:
+    version: "2.10.x"
+    registry: "ghcr.io/fluxcd"
+    artifact: "oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests"
+  components:
+    - source-controller
+    - kustomize-controller
+    - helm-controller
+    - notification-controller
+    - source-watcher
+  cluster:
+    type: kubernetes
+    size: medium
+    multitenant: false
+    networkPolicy: true
+    domain: "cluster.local"
+  storage:
+    class: "standard"
+    size: "10Gi"
+  sync:
+    kind: GitRepository
+    url: "https://gitlab.com/gitops55624/flux.git"
+    ref: "refs/heads/main"
+    path: "clusters/laptop"
+    interval: 1m
+  kustomize:
+    patches:
+      # Enable DefaultToRetryOnFailure and CancelHealthCheckOnNewRevision on helm-controller.
+      # This provides the official failure recovery behavior without requiring copy-pasted
+      # retry/remediation blocks on every individual HelmRelease.
+      - target:
+          kind: Deployment
+          name: helm-controller
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --feature-gates=DefaultToRetryOnFailure=true,CancelHealthCheckOnNewRevision=true
+      # Enable CancelHealthCheckOnNewRevision and StrictPostBuildSubstitutions on kustomize-controller
+      # so stuck health checks cancel on new commits and missing variables fail fast.
+      - target:
+          kind: Deployment
+          name: kustomize-controller
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --feature-gates=CancelHealthCheckOnNewRevision=true,StrictPostBuildSubstitutions=true

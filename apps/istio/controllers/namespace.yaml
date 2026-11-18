@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-system
+  labels:
+    # Required by istio-cni and ztunnel DaemonSets on VKS (restricted PSA default)
+    pod-security.kubernetes.io/enforce: privileged
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled

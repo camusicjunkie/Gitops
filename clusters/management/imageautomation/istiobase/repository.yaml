@@ -1,0 +1,10 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: istio-base-chart
+  namespace: flux-system
+spec:
+  image: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/istio/charts/base
+  interval: 10m
+  secretRef:
+    name: harbor-pull

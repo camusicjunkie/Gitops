@@ -1,0 +1,11 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: metrics-server-chart
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: metrics-server-chart
+  policy:
+    semver:
+      range: "*"

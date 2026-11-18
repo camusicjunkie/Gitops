@@ -1,0 +1,23 @@
+---
+# Grant cluster-admin to members of the Keycloak "headlamp-admins" group when they
+# reach the cluster through Headlamp. Headlamp forwards each user's OIDC id_token to
+# the kube-apiserver (which runs with --oidc-* flags — see project-headlamp-ui), so
+# authorization is per-user k8s RBAC: the `groups` claim value "headlamp-admins"
+# becomes the k8s group "oidc:headlamp-admins" (apiserver --oidc-groups-prefix=oidc:).
+#
+# This group is DEDICATED to Headlamp — it is not the flux-admins group or any other
+# app's group. The group object itself is declared in
+# infrastructure/configs/keycloak-config-cli/realm-config/40-groups.yaml; membership
+# is data, managed in Keycloak, not in Git.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-admins
+subjects:
+  - kind: Group
+    name: oidc:headlamp-admins
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

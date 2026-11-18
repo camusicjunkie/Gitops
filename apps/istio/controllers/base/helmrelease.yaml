@@ -1,0 +1,12 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: istio-base
+  namespace: istio-system
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: istio-base
+  values:
+    defaultRevision: default

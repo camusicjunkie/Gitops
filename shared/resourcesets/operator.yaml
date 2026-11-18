@@ -1,0 +1,60 @@
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSet
+metadata:
+  name: flux-operator
+  namespace: flux-system
+spec:
+  inputs:
+    - version: "*"
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: OCIRepository
+      metadata:
+        name: << inputs.provider.name >>
+        namespace: << inputs.provider.namespace >>
+      spec:
+        interval: 30m
+        url: oci://${HARBOR_REGISTRY}/${HARBOR_PROJECT}/flux/charts/flux-operator
+        layerSelector:
+          mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+          operation: copy
+        ref:
+          semver: << inputs.version | quote >>
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      metadata:
+        name: << inputs.provider.name >>
+        namespace: << inputs.provider.namespace >>
+      spec:
+        interval: 30m
+        releaseName: << inputs.provider.name >>
+        serviceAccountName: << inputs.provider.name >>
+        chartRef:
+          kind: OCIRepository
+          name: << inputs.provider.name >>
+        valuesFrom:
+          - kind: Secret
+            name: flux-web-client
+            valuesKey: client-id
+            targetPath: web.config.authentication.oauth2.clientID
+          - kind: Secret
+            name: flux-web-client
+            valuesKey: client-secret
+            targetPath: web.config.authentication.oauth2.clientSecret
+        values:
+          web:
+            config:
+              baseURL: https://flux.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}
+              authentication:
+                type: OAuth2
+                oauth2:
+                  provider: OIDC
+                  issuerURL: https://keycloak.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}/realms/midworld
+            httpRoute:
+              enabled: true
+              parentRefs:
+                - name: main-gateway
+                  namespace: istio-system
+                  sectionName: https
+              hostnames:
+                - flux.${APPS_SUBDOMAIN}.${NETWORK_DOMAIN}

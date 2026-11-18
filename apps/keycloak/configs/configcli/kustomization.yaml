@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: sso
+resources:
+  - cronjob.yaml
+  - secret.yaml
+
+# The realm config is mounted into the CronJob from this ConfigMap.
+# Keys keep numeric prefixes so keycloak-config-cli imports /config/*.yaml in dependency order,
+# while Git filenames stay clean. Content hash triggers updates automatically on changes.
+configMapGenerator:
+  - name: midworld-realm-config
+    files:
+      - 10realm.yaml=realm/realm.yaml
+      - 12clientscopes.yaml=realm/clientscopes.yaml
+      - 15clients.yaml=realm/clients.yaml
+      - 25roles.yaml=realm/roles.yaml
+      - 27scopemappings.yaml=realm/scopemappings.yaml
+      - 40groups.yaml=realm/groups.yaml

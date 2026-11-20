@@ -82,6 +82,18 @@ module "flux_operator_bootstrap" {
       type: kubernetes.io/dockerconfigjson
       stringData:
         .dockerconfigjson: '${replace(local.harbor_dockerconfigjson, "'", "''")}'
+      ${var.gitlab_push_token != "" ? <<-PUSH
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: flux-system-push
+      type: Opaque
+      stringData:
+        username: '${replace(var.gitlab_push_token_username, "'", "''")}'
+        password: '${replace(var.gitlab_push_token, "'", "''")}'
+      PUSH
+    : ""}
       ${var.sops_age_key != "" ? <<-SOPS
       ---
       apiVersion: v1

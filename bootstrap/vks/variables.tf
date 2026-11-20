@@ -62,6 +62,19 @@ variable "gitlab_deploy_token" {
   sensitive = true
 }
 
+variable "gitlab_push_token_username" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "gitlab_push_token" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "write_repository token for ImageUpdateAutomation (stored as flux-system-push in flux-system); management clusters only"
+}
+
 variable "harbor_robot_username" {
   type      = string
   sensitive = true

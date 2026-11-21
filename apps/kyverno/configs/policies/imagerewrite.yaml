@@ -3,6 +3,10 @@ kind: MutatingPolicy
 metadata:
   name: rewrite-image-registry-to-harbor
 spec:
+  reinvocationPolicy: IfNeeded
+  autogen:
+    podControllers:
+      controllers: []
   matchConstraints:
     resourceRules:
       - apiGroups: [""]

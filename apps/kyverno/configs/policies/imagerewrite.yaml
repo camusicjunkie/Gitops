@@ -1,43 +1,45 @@
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
 metadata:
   name: rewrite-image-registry-to-harbor
 spec:
-  rules:
-    - name: rewrite-containers
-      match:
-        any:
-          - resources:
-              kinds:
-                - Pod
-      exclude:
-        any:
-          - resources:
-              namespaces:
-                - kube-system
-                - kube-public
-                - kube-node-lease
-      mutate:
-        foreach:
-          - list: "request.object.spec.containers"
-            preconditions:
-              all:
-                - key: "{{ element.image }}"
-                  operator: NotEquals
-                  value: "${HARBOR_REGISTRY}/*"
-            patchStrategicMerge:
-              spec:
-                containers:
-                  - name: "{{ element.name }}"
-                    image: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/{{ request.namespace }}/{{ regex_replace_all('^(.*/)?([^/]+)$', element.image, '$2') }}"
-          - list: "request.object.spec.initContainers[]"
-            preconditions:
-              all:
-                - key: "{{ element.image }}"
-                  operator: NotEquals
-                  value: "${HARBOR_REGISTRY}/*"
-            patchStrategicMerge:
-              spec:
-                initContainers:
-                  - name: "{{ element.name }}"
-                    image: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/{{ request.namespace }}/{{ regex_replace_all('^(.*/)?([^/]+)$', element.image, '$2') }}"
+  reinvocationPolicy: IfNeeded
+  autogen:
+    podControllers:
+      controllers: []
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+  matchConditions:
+    - name: exclude-system-namespaces
+      expression: "!(request.namespace in ['kube-system', 'kube-public', 'kube-node-lease'])"
+  variables:
+    - name: harborPrefix
+      expression: "'${HARBOR_REGISTRY}/${HARBOR_PROJECT}/' + request.namespace + '/'"
+  mutations:
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: |
+          object.spec.containers.map(c,
+            !c.image.startsWith('${HARBOR_REGISTRY}/') ?
+              JSONPatch{
+                op: "replace",
+                path: "/spec/containers/" + string(object.spec.containers.indexOf(c)) + "/image",
+                value: variables.harborPrefix + c.image.split('/')[size(c.image.split('/')) - 1]
+              } : null
+          ).filter(p, p != null)
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: |
+          has(object.spec.initContainers) ?
+            object.spec.initContainers.map(c,
+              !c.image.startsWith('${HARBOR_REGISTRY}/') ?
+                JSONPatch{
+                  op: "replace",
+                  path: "/spec/initContainers/" + string(object.spec.initContainers.indexOf(c)) + "/image",
+                  value: variables.harborPrefix + c.image.split('/')[size(c.image.split('/')) - 1]
+                } : null
+            ).filter(p, p != null) : []

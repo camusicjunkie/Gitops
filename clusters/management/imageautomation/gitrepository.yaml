@@ -1,0 +1,14 @@
+# Dedicated GitRepository with write credentials for ImageUpdateAutomation;
+# the flux-system GitRepository that syncs the cluster keeps a read-only token.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: image-automation-push
+  namespace: flux-system
+spec:
+  interval: 10m
+  url: ${GIT_REPO_URL}
+  ref:
+    branch: main
+  secretRef:
+    name: image-automation-push

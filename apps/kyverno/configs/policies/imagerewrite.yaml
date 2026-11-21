@@ -29,7 +29,7 @@ spec:
               spec:
                 containers:
                   - name: "{{ element.name }}"
-                    image: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/{{ request.object.metadata.namespace }}/{{ regex_replace_all('^(.*/)?([^/]+)$', element.image, '$2') }}"
+                    image: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/{{ request.namespace }}/{{ regex_replace_all('^(.*/)?([^/]+)$', element.image, '$2') }}"
           - list: "request.object.spec.initContainers[]"
             preconditions:
               all:
@@ -40,4 +40,4 @@ spec:
               spec:
                 initContainers:
                   - name: "{{ element.name }}"
-                    image: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/{{ request.object.metadata.namespace }}/{{ regex_replace_all('^(.*/)?([^/]+)$', element.image, '$2') }}"
+                    image: "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/{{ request.namespace }}/{{ regex_replace_all('^(.*/)?([^/]+)$', element.image, '$2') }}"

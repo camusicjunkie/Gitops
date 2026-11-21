@@ -62,6 +62,19 @@ variable "gitlab_deploy_token" {
   sensitive = true
 }
 
+variable "image_automation_git_token_username" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "image_automation_git_token" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "GitLab Project/Group Access Token (write_repository scope) for ImageUpdateAutomation; stored as image-automation-push on management clusters only"
+}
+
 variable "harbor_robot_username" {
   type      = string
   sensitive = true

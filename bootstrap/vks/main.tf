@@ -82,6 +82,18 @@ module "flux_operator_bootstrap" {
       type: kubernetes.io/dockerconfigjson
       stringData:
         .dockerconfigjson: '${replace(local.harbor_dockerconfigjson, "'", "''")}'
+      ${local.cluster_env == "management" && var.image_automation_git_token != "" ? <<-PUSH
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: image-automation-push
+      type: Opaque
+      stringData:
+        username: '${replace(var.image_automation_git_token_username, "'", "''")}'
+        password: '${replace(var.image_automation_git_token, "'", "''")}'
+      PUSH
+    : ""}
       ${var.sops_age_key != "" ? <<-SOPS
       ---
       apiVersion: v1

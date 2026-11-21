@@ -7,7 +7,7 @@ spec:
   interval: 10m
   sourceRef:
     kind: GitRepository
-    name: flux-system-push
+    name: image-automation-push
   git:
     checkout:
       ref:

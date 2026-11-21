@@ -164,10 +164,10 @@ With **GitLab's Harbor integration** enabled (providing `HARBOR_HOST`, `HARBOR_P
 | `INTERNAL_CA_BUNDLE` | project (File) | Internal CA bundle for `smoke-test` HTTPS checks |
 | `SMOKE_APPS` | project | Space-separated app hostnames to probe (e.g. `harbor headlamp keycloak`) |
 | `TF_VAR_network_domain` | group | Network DNS suffix (set per GitLab instance, never committed) |
-| `TF_VAR_gitlab_deploy_token_username` | project (Masked, protected) | Flux Git deploy token username |
-| `TF_VAR_gitlab_deploy_token` | project (Masked, protected) | Flux Git deploy token |
-| `TF_VAR_gitlab_push_token_username` | project (Masked, protected) | Image automation push token username (management clusters) |
-| `TF_VAR_gitlab_push_token` | project (Masked, protected) | Image automation push token, stored as `flux-system-push` (management clusters) |
+| `TF_VAR_gitlab_deploy_token_username` | project (Masked, protected) | Flux Git Deploy Token username (`read_repository` only) |
+| `TF_VAR_gitlab_deploy_token` | project (Masked, protected) | Flux Git Deploy Token (`read_repository` only) |
+| `TF_VAR_gitlab_push_token_username` | project, `*-management-*` (Masked, protected) | GitLab Project Access Token username for image automation (management clusters only) |
+| `TF_VAR_gitlab_push_token` | project, `*-management-*` (Masked, protected) | GitLab Project Access Token (`write_repository` scope), stored as `flux-system-push` on management clusters only |
 | `TF_VAR_sops_age_key` | project (Masked, protected) | Private `age` key stored as `sops-age` in `flux-system` for SOPS decryption |
 
 ### Secrets Management (SOPS + `age`)
@@ -207,7 +207,7 @@ During Day-0 bootstrap, OpenTofu injects `TF_VAR_sops_age_key` into `flux-system
 
 ### Management Cluster (`ImageUpdateAutomation`)
 
-1. Every cluster's `TF_VAR_gitlab_deploy_token` has **`read_repository`** scope only. When bootstrapping a management cluster (`CLUSTER=<network>-management-<color>`), also supply `TF_VAR_gitlab_push_token` (and its username) with **`write_repository`** scope: OpenTofu stores it as `flux-system-push`, which only the image automation's GitRepository uses. Without it the automation cannot push.
+1. Every cluster's `TF_VAR_gitlab_deploy_token` is a Deploy Token with **`read_repository`** scope only. When bootstrapping a management cluster (`CLUSTER=<network>-management-<color>`), also supply `TF_VAR_gitlab_push_token` (and its username) as a **GitLab Project Access Token** (or Group Access Token) with **`write_repository`** scope (GitLab Deploy Tokens only support `read_repository`). Scope those CI variables to `*-management-*`—OpenTofu also guards injection with `local.cluster_env == "management"`, storing it as `flux-system-push` solely for `ImageUpdateAutomation`. Without it, automation cannot push.
 2. As `mirror.sh` + Charon land new chart or image tags in Harbor, `clusters/management/imageautomation/` commits pinned `tag:` updates to the **`image-updates`** branch—review and merge the MR to promote them to `staging` and `production`.
 
 ### Blue/Green Cutover & Retirement

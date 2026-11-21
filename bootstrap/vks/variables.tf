@@ -72,7 +72,7 @@ variable "gitlab_push_token" {
   type        = string
   sensitive   = true
   default     = ""
-  description = "write_repository token for ImageUpdateAutomation (stored as flux-system-push in flux-system); management clusters only"
+  description = "GitLab Project/Group Access Token (write_repository scope) for ImageUpdateAutomation; stored as flux-system-push on management clusters only"
 }
 
 variable "harbor_robot_username" {

@@ -82,7 +82,7 @@ module "flux_operator_bootstrap" {
       type: kubernetes.io/dockerconfigjson
       stringData:
         .dockerconfigjson: '${replace(local.harbor_dockerconfigjson, "'", "''")}'
-      ${var.gitlab_push_token != "" ? <<-PUSH
+      ${local.cluster_env == "management" && var.gitlab_push_token != "" ? <<-PUSH
       ---
       apiVersion: v1
       kind: Secret

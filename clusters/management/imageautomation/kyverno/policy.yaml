@@ -8,6 +8,7 @@ spec:
     name: kyverno-chart
   policy:
     semver:
-      # Chart 3.10 (Kyverno 1.20) refuses kyverno.io/v1 ClusterPolicy, which
-      # every policy in apps/kyverno/configs is. Widen after migrating them.
+      # Temporary guardrail matching bootstrap/mirror/platform.yaml (>=3.9.0 <3.10.0):
+      # chart 3.10 (Kyverno 1.20) drops kyverno.io/v1 ClusterPolicy execution.
+      # Reset to "*" after migrating apps/kyverno/configs/policies to policies.kyverno.io/v1.
       range: "3.9.x"

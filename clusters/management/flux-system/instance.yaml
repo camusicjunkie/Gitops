@@ -56,6 +56,14 @@ spec:
               provider: sops
               secretRef:
                 name: sops-age
+      # Enable DefaultToRetryOnFailure and CancelHealthCheckOnNewRevision on helm-controller
+      - target:
+          kind: Deployment
+          name: helm-controller
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --feature-gates=DefaultToRetryOnFailure=true,CancelHealthCheckOnNewRevision=true
       # Enable CancelHealthCheckOnNewRevision and StrictPostBuildSubstitutions on kustomize-controller
       - target:
           kind: Deployment

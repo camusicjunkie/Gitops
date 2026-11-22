@@ -66,6 +66,7 @@ validate-manifests:
     - kubectl kustomize clusters/staging > /dev/null
     - kubectl kustomize clusters/production > /dev/null
     - kubectl kustomize shared/resourcesets > /dev/null
+    - kubectl kustomize shared/resourcesets/management > /dev/null
     - kubectl kustomize shared/notifications > /dev/null
     - kubectl kustomize shared/receiver > /dev/null
     - echo "All cluster and shared manifests validated successfully."

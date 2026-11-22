@@ -1,0 +1,141 @@
+# Devcontainer Pods (camusicjunkie/k8scontainer) on the management cluster:
+# - Owns Namespace/devcontainer (restricted PSA, prune: disabled) so admin PVCs
+#   are never pruned, copies harbor-ca and harbor-pull from flux-system, and
+#   sets harbor-pull on the default ServiceAccount (no API token mounted).
+# - Defines read-only (devcontainer) and push (devcontainer-push) GitRepositories
+#   for ${DEVCONTAINER_REPO_URL}, matching image-automation-push's token split.
+# - Syncs ./manifests/devcontainer without wait: true (before the first
+#   image-updates MR merges, the Roster names harbor.example and cannot pull).
+# - Runs ImageUpdateAutomation in devcontainer (only sees same-namespace
+#   ImagePolicies) pushing Release tags to image-updates via devcontainer-push.
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSet
+metadata:
+  name: devcontainer
+  namespace: flux-system
+spec:
+  inputs:
+    - namespace: devcontainer
+  resources:
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: << inputs.namespace >>
+        labels:
+          pod-security.kubernetes.io/enforce: restricted
+          pod-security.kubernetes.io/enforce-version: latest
+        annotations:
+          fluxcd.controlplane.io/prune: disabled
+    - apiVersion: v1
+      kind: Secret
+      metadata:
+        name: harbor-ca
+        namespace: << inputs.namespace >>
+        annotations:
+          fluxcd.controlplane.io/copyFrom: flux-system/harbor-ca
+      type: Opaque
+    - apiVersion: v1
+      kind: Secret
+      metadata:
+        name: harbor-pull
+        namespace: << inputs.namespace >>
+        annotations:
+          fluxcd.controlplane.io/copyFrom: flux-system/harbor-pull
+      type: kubernetes.io/dockerconfigjson
+    - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: default
+        namespace: << inputs.namespace >>
+        annotations:
+          fluxcd.controlplane.io/prune: disabled
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: harbor-pull
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      metadata:
+        name: devcontainer
+        namespace: flux-system
+      spec:
+        interval: 5m
+        url: ${DEVCONTAINER_REPO_URL}
+        ref:
+          branch: main
+        secretRef:
+          name: devcontainer-git
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      metadata:
+        name: devcontainer-push
+        namespace: flux-system
+      spec:
+        interval: 10m
+        url: ${DEVCONTAINER_REPO_URL}
+        ref:
+          branch: main
+        secretRef:
+          name: devcontainer-git-push
+    - apiVersion: kustomize.toolkit.fluxcd.io/v1
+      kind: Kustomization
+      metadata:
+        name: devcontainer
+        namespace: flux-system
+      spec:
+        dependsOn:
+          - name: istio
+        interval: 10m
+        retryInterval: 2m
+        timeout: 10m
+        prune: true
+        sourceRef:
+          kind: GitRepository
+          name: devcontainer
+        path: ./manifests/devcontainer
+        patches:
+          - patch: |
+              $patch: delete
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: devcontainer
+          - target:
+              kind: ImageRepository
+              name: devcontainer-standard
+            patch: |
+              - op: replace
+                path: /spec/image
+                value: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/devcontainer/standard
+              - op: add
+                path: /spec/certSecretRef
+                value:
+                  name: harbor-ca
+              - op: add
+                path: /spec/secretRef
+                value:
+                  name: harbor-pull
+    - apiVersion: image.toolkit.fluxcd.io/v1
+      kind: ImageUpdateAutomation
+      metadata:
+        name: devcontainer
+        namespace: << inputs.namespace >>
+      spec:
+        interval: 10m
+        sourceRef:
+          kind: GitRepository
+          name: devcontainer-push
+          namespace: flux-system
+        git:
+          checkout:
+            ref:
+              branch: main
+          commit:
+            author:
+              name: fluxcdbot
+              email: fluxcdbot@users.noreply.github.com
+            messageTemplate: "chore(images): update the Standard Image [skip ci]"
+          push:
+            branch: image-updates
+        update:
+          path: ./manifests/devcontainer
+          strategy: Setters

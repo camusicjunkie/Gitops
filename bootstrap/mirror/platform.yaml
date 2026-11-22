@@ -129,49 +129,49 @@ artifacts:
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/charts/base
     includeReferrers: true
     selector:
-      semver: ">=1.30.0 <1.31.0"
+      semver: ">=1.32.0 <1.33.0"
       limit: 1
   - source: dhi.io/istio-discovery-chart
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/charts/istiod
     includeReferrers: true
     selector:
-      semver: ">=1.30.0 <1.31.0"
+      semver: ">=1.32.0 <1.33.0"
       limit: 1
   - source: dhi.io/istio-cni-chart
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/charts/cni
     includeReferrers: true
     selector:
-      semver: ">=1.30.0 <1.31.0"
+      semver: ">=1.32.0 <1.33.0"
       limit: 1
   - source: dhi.io/istio-ztunnel-chart
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/charts/ztunnel
     includeReferrers: true
     selector:
-      semver: ">=1.30.0 <1.31.0"
+      semver: ">=1.32.0 <1.33.0"
       limit: 1
   - source: dhi.io/istio-cni
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/cni
     includeReferrers: true
     selector:
-      semver: ">=1.30.0 <1.31.0"
+      semver: ">=1.32.0 <1.33.0"
       limit: 1
   - source: dhi.io/istio-ztunnel
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/ztunnel
     includeReferrers: true
     selector:
-      semver: ">=1.30.0 <1.31.0"
+      semver: ">=1.32.0 <1.33.0"
       limit: 1
   - source: dhi.io/istio-pilot
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/pilot
     includeReferrers: true
     selector:
-      semver: ">=1.30.0 <1.31.0"
+      semver: ">=1.32.0 <1.33.0"
       limit: 1
   - source: dhi.io/istio-proxyv2
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/istio/proxyv2
     includeReferrers: true
     selector:
-      semver: ">=1.30.0 <1.31.0"
+      semver: ">=1.32.0 <1.33.0"
       limit: 1
 
   # apps/keycloak

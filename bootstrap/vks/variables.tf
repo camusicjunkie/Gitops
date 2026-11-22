@@ -75,6 +75,44 @@ variable "image_automation_git_token" {
   description = "GitLab Project/Group Access Token (write_repository scope) for ImageUpdateAutomation; stored as image-automation-push on management clusters only"
 }
 
+variable "harbor_ca" {
+  type        = string
+  default     = ""
+  description = "PEM CA of Harbor's certificate (stored as harbor-ca in flux-system, key ca.crt). Required on management clusters: every ImageRepository there trusts Harbor through it, since Flux's controllers do not see the nodes' trust."
+}
+
+variable "devcontainer_repo_url" {
+  type        = string
+  default     = ""
+  description = "Devcontainer repository URL (k8scontainer) on this network's GitLab, as DEVCONTAINER_REPO_URL in flux-runtime-info. Management clusters only. Set per GitLab instance, never committed."
+}
+
+variable "devcontainer_deploy_token_username" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "devcontainer_deploy_token" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "read_repository token for the devcontainer repository (stored as devcontainer-git in flux-system); management clusters only"
+}
+
+variable "devcontainer_push_token_username" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
+
+variable "devcontainer_push_token" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "write_repository token for the devcontainer repository's image automation (stored as devcontainer-git-push in flux-system); management clusters only"
+}
+
 variable "harbor_robot_username" {
   type      = string
   sensitive = true

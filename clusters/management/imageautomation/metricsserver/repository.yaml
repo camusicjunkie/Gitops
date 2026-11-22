@@ -6,5 +6,7 @@ metadata:
 spec:
   image: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/metrics-server/charts/metrics-server
   interval: 10m
+  certSecretRef:
+    name: harbor-ca
   secretRef:
     name: harbor-pull

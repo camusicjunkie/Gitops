@@ -6,5 +6,7 @@ metadata:
 spec:
   image: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/cert-manager/charts/cert-manager
   interval: 10m
+  certSecretRef:
+    name: harbor-ca
   secretRef:
     name: harbor-pull

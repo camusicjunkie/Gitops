@@ -80,6 +80,8 @@ d:/Gitops/
 │   ├── management/                     # Management cluster (ImageRepository, ImagePolicy, ImageUpdateAutomation)
 │   │   ├── flux-system/                # FluxInstance with image-reflector + image-automation controllers
 │   │   ├── imageautomation/            # Automated Harbor tag scanning and Git commit back to apps/
+│   │   ├── istio.yaml                  # Istio gateway-only (no mesh) from apps/istio/controllers
+│   │   ├── devcontainer/               # Sync + image automation for the devcontainer repository's Pods
 │   │   └── notifications.yaml          # Pointer -> shared/notifications
 │   ├── production/                     # Production entrypoint (APPS_SUBDOMAIN: apps)
 │   │   ├── settings.yaml               # Environment ConfigMap (APPS_SUBDOMAIN, GATEWAY_CLUSTERIP)
@@ -168,6 +170,12 @@ With **GitLab's Harbor integration** enabled (providing `HARBOR_HOST`, `HARBOR_P
 | `TF_VAR_gitlab_deploy_token` | project (Masked, protected) | Flux Git Deploy Token (`read_repository` only) |
 | `TF_VAR_image_automation_git_token_username` | project, `*-management-*` (Masked, protected) | GitLab Project Access Token username for image automation (management clusters only) |
 | `TF_VAR_image_automation_git_token` | project, `*-management-*` (Masked, protected) | GitLab Project Access Token (`write_repository` scope), stored as `image-automation-push` on management clusters only |
+| `TF_VAR_harbor_ca` | project | PEM CA of Harbor's certificate, stored as `harbor-ca` (`ca.crt`) in `flux-system`. Required on management clusters: every ImageRepository there trusts Harbor through it |
+| `TF_VAR_devcontainer_repo_url` | group | Devcontainer repository URL on this GitLab, as `DEVCONTAINER_REPO_URL` (management clusters) |
+| `TF_VAR_devcontainer_deploy_token_username` | project (Masked, protected) | Devcontainer repository read token username (management clusters) |
+| `TF_VAR_devcontainer_deploy_token` | project (Masked, protected) | Devcontainer repository `read_repository` token, stored as `devcontainer-git` (management clusters) |
+| `TF_VAR_devcontainer_push_token_username` | project (Masked, protected) | Devcontainer image automation push token username (management clusters) |
+| `TF_VAR_devcontainer_push_token` | project (Masked, protected) | Devcontainer repository `write_repository` token, stored as `devcontainer-git-push` (management clusters) |
 | `TF_VAR_sops_age_key` | project (Masked, protected) | Private `age` key stored as `sops-age` in `flux-system` for SOPS decryption |
 
 ### Secrets Management (SOPS + `age`)
@@ -209,6 +217,18 @@ During Day-0 bootstrap, OpenTofu injects `TF_VAR_sops_age_key` into `flux-system
 
 1. Every cluster's `TF_VAR_gitlab_deploy_token` is a Deploy Token with **`read_repository`** scope only. When bootstrapping a management cluster (`CLUSTER=<network>-management-<color>`), also supply `TF_VAR_image_automation_git_token` (and its username) as a **GitLab Project Access Token** (or Group Access Token) with **`write_repository`** scope (GitLab Deploy Tokens only support `read_repository`). Scope those CI variables to `*-management-*`—OpenTofu also guards injection with `local.cluster_env == "management"`, storing it as `image-automation-push` solely for `ImageUpdateAutomation`. Without it, automation cannot push.
 2. As `mirror.sh` + Charon land new chart or image tags in Harbor, `clusters/management/imageautomation/` commits pinned `tag:` updates to the **`image-updates`** branch—review and merge the MR to promote them to `staging` and `production`.
+3. Every ImageRepository on the management cluster sets `certSecretRef: harbor-ca`: Flux's controllers run in Pods and do not see the nodes' trust of Harbor (a Supervisor service's certificate). Supply `TF_VAR_harbor_ca`.
+
+### Management Cluster: Devcontainer Pods
+
+The admins' Devcontainer Pods (the `k8scontainer` repository) run on the management cluster, apart from workloads. `clusters/management/` adds:
+
+* **`istio.yaml`**: `apps/istio/controllers` without `istio-cni`, `ztunnel` or the ambient profile, so `gatewayClassName: istio` Gateways get a gateway Deployment and nothing joins a mesh. istiod runs with `PILOT_ENABLE_ALPHA_GATEWAY_API=true`: Istio 1.30 refuses TCP listeners without it.
+* **`devcontainer/`**: a read-only GitRepository (`devcontainer-git`) and a Kustomization syncing `./manifests/devcontainer`, patching its ImageRepository to this Harbor with `harbor-ca` and `harbor-pull`; a ResourceSet that copies those two Secrets into the `devcontainer` namespace, gives its default ServiceAccount `harbor-pull`, and runs the namespace's ImageUpdateAutomation, which pushes Release tags to `image-updates` through its own GitRepository (`devcontainer-git-push`).
+
+Supply the `TF_VAR_devcontainer_*` variables and `TF_VAR_harbor_ca` when bootstrapping the management cluster. A GitLab group deploy token can serve as both read tokens.
+
+**Gateway API channel.** `apps/istio/controllers/gatewayapi/crds.yaml` is the **experimental** v1.7.0 bundle on every cluster: Istio reads TCPRoute only at `v1alpha2`, which the standard channel stopped serving when TCPRoute went GA (v1.6.0). From v1.7.0 the bundle carries a `safe-upgrades` ValidatingAdmissionPolicy (needs Kubernetes 1.30+) that refuses moving a cluster from standard to experimental CRDs, so go straight from the current standard v1.2.1 to experimental v1.7.0; see `update.sh`.
 
 ### Blue/Green Cutover & Retirement
 

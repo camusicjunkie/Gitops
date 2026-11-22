@@ -94,6 +94,42 @@ module "flux_operator_bootstrap" {
         password: '${replace(var.image_automation_git_token, "'", "''")}'
       PUSH
     : ""}
+      ${var.harbor_ca != "" ? <<-HARBORCA
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: harbor-ca
+      type: Opaque
+      stringData:
+        ca.crt: |
+          ${indent(4, trimspace(var.harbor_ca))}
+      HARBORCA
+    : ""}
+      ${local.cluster_env == "management" && var.devcontainer_deploy_token != "" ? <<-DEVC
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: devcontainer-git
+      type: Opaque
+      stringData:
+        username: '${replace(var.devcontainer_deploy_token_username, "'", "''")}'
+        password: '${replace(var.devcontainer_deploy_token, "'", "''")}'
+      DEVC
+    : ""}
+      ${local.cluster_env == "management" && var.devcontainer_push_token != "" ? <<-DEVCPUSH
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: devcontainer-git-push
+      type: Opaque
+      stringData:
+        username: '${replace(var.devcontainer_push_token_username, "'", "''")}'
+        password: '${replace(var.devcontainer_push_token, "'", "''")}'
+      DEVCPUSH
+    : ""}
       ${var.sops_age_key != "" ? <<-SOPS
       ---
       apiVersion: v1
@@ -120,6 +156,8 @@ module "flux_operator_bootstrap" {
       HARBOR_REGISTRY = var.harbor_registry
       HARBOR_PROJECT  = var.harbor_project
       GIT_REPO_URL    = var.git_repo_url
+      # Management clusters only; empty elsewhere.
+      DEVCONTAINER_REPO_URL = var.devcontainer_repo_url
     }
   }
 }

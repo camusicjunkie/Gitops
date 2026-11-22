@@ -148,17 +148,20 @@ module "flux_operator_bootstrap" {
     labels = {
       "reconcile.fluxcd.io/watch" = "Enabled"
     }
-    data = {
-      NETWORK_DOMAIN  = var.network_domain
-      CLUSTER_NAME    = var.cluster_name
-      CLUSTER_ENV     = local.cluster_env
-      CLUSTER_COLOR   = local.cluster_color
-      HARBOR_REGISTRY = var.harbor_registry
-      HARBOR_PROJECT  = var.harbor_project
-      GIT_REPO_URL    = var.git_repo_url
-      # Management clusters only; empty elsewhere.
-      DEVCONTAINER_REPO_URL = var.devcontainer_repo_url
-    }
+    data = merge(
+      {
+        NETWORK_DOMAIN  = var.network_domain
+        CLUSTER_NAME    = var.cluster_name
+        CLUSTER_ENV     = local.cluster_env
+        CLUSTER_COLOR   = local.cluster_color
+        HARBOR_REGISTRY = var.harbor_registry
+        HARBOR_PROJECT  = var.harbor_project
+        GIT_REPO_URL    = var.git_repo_url
+      },
+      local.cluster_env == "management" ? {
+        DEVCONTAINER_REPO_URL = var.devcontainer_repo_url
+      } : {}
+    )
   }
 }
 }

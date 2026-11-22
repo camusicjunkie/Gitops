@@ -3,6 +3,5 @@ kind: Kustomization
 resources:
   - flux-system
   - imageautomation
-  - istio.yaml
-  - devcontainer
+  - resourcesets.yaml
   - notifications.yaml

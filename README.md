@@ -223,12 +223,12 @@ During Day-0 bootstrap, OpenTofu injects `TF_VAR_sops_age_key` into `flux-system
 
 The admins' Devcontainer Pods (the `k8scontainer` repository) run on the management cluster, apart from workloads. `clusters/management/` adds:
 
-* **`istio.yaml`**: `apps/istio/controllers` without `istio-cni`, `ztunnel` or the ambient profile, so `gatewayClassName: istio` Gateways get a gateway Deployment and nothing joins a mesh. istiod runs with `PILOT_ENABLE_ALPHA_GATEWAY_API=true`: Istio 1.30 refuses TCP listeners without it.
+* **`istio.yaml`**: `apps/istio/controllers` without `istio-cni`, `ztunnel` or the ambient profile, so `gatewayClassName: istio` Gateways get a gateway Deployment and nothing joins a mesh. With no Kyverno here to rewrite images, istiod and its gateways pull from the Harbor mirror directly (`global.hub: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/istio`, `harbor-pull` copied into `istio-system`).
 * **`devcontainer/`**: a read-only GitRepository (`devcontainer-git`) and a Kustomization syncing `./manifests/devcontainer`, patching its ImageRepository to this Harbor with `harbor-ca` and `harbor-pull`; a ResourceSet that copies those two Secrets into the `devcontainer` namespace, gives its default ServiceAccount `harbor-pull`, and runs the namespace's ImageUpdateAutomation, which pushes Release tags to `image-updates` through its own GitRepository (`devcontainer-git-push`).
 
 Supply the `TF_VAR_devcontainer_*` variables and `TF_VAR_harbor_ca` when bootstrapping the management cluster. A GitLab group deploy token can serve as both read tokens.
 
-**Gateway API channel.** `apps/istio/controllers/gatewayapi/crds.yaml` is the **experimental** v1.7.0 bundle on every cluster: Istio reads TCPRoute only at `v1alpha2`, which the standard channel stopped serving when TCPRoute went GA (v1.6.0). From v1.7.0 the bundle carries a `safe-upgrades` ValidatingAdmissionPolicy (needs Kubernetes 1.30+) that refuses moving a cluster from standard to experimental CRDs, so go straight from the current standard v1.2.1 to experimental v1.7.0; see `update.sh`.
+**Gateway API and Istio versions.** `apps/istio/controllers/gatewayapi/crds.yaml` is the **standard** v1.7.0 bundle, and Istio is 1.32 on every cluster: Istio reads TCPRoute at `v1` (GA in Gateway API v1.6.0) only from 1.31 (istio/istio#60766); 1.30 read `v1alpha2`, which the standard channel no longer serves. From v1.7.0 the bundle carries a `safe-upgrades` ValidatingAdmissionPolicy (Kubernetes 1.30+) that refuses CRD downgrades. Istio 1.31+ publishes upstream charts at `blob.istio.io/istio-release/charts` (OCI: `ghcr.io/istio/release/charts`); this repository mirrors DHI's builds (`bootstrap/mirror/platform.yaml`).
 
 ### Blue/Green Cutover & Retirement
 

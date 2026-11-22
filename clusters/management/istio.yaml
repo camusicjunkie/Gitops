@@ -1,9 +1,13 @@
-# Istio on the management cluster: the Gateway API CRDs (experimental channel,
-# see apps/istio/controllers/gatewayapi/update.sh), istio-base and istiod
-# only, so `gatewayClassName: istio` Gateways (the devcontainer's SSH Gateway)
-# get a gateway deployment. No mesh: istio-cni and ztunnel are left out and
-# istiod runs without the ambient profile; workloads here are reached through
-# their Gateway, not enrolled.
+# Istio on the management cluster: the Gateway API CRDs (standard channel; Istio
+# reads TCPRoute v1 from 1.31), istio-base and istiod only, so
+# `gatewayClassName: istio` Gateways (the devcontainer's SSH Gateway) get a
+# gateway deployment. No mesh: istio-cni and ztunnel are left out and istiod
+# runs without the ambient profile; workloads here are reached through their
+# Gateway, not enrolled.
+#
+# This cluster runs no Kyverno to rewrite images to Harbor, so istiod and the
+# gateways it deploys pull from the Harbor mirror directly (global.hub), with
+# harbor-pull; the ResourceSet below copies that Secret into istio-system.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -52,8 +56,6 @@ spec:
         metadata:
           name: ztunnel
           namespace: istio-system
-    # TCP listeners (the devcontainer's SSH Gateway) need Istio's alpha Gateway
-    # API support: Istio 1.30 still gates TCPRoute behind it.
     - target:
         kind: HelmRelease
         name: istiod
@@ -61,10 +63,11 @@ spec:
         - op: remove
           path: /spec/values/profile
         - op: add
-          path: /spec/values/pilot
+          path: /spec/values/global
           value:
-            env:
-              PILOT_ENABLE_ALPHA_GATEWAY_API: "true"
+            hub: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/istio
+            imagePullSecrets:
+              - harbor-pull
     - target:
         kind: HelmRelease
       patch: |
@@ -79,3 +82,25 @@ spec:
             crds: CreateReplace
           driftDetection:
             mode: enabled
+---
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSet
+metadata:
+  name: istio-pull
+  namespace: flux-system
+spec:
+  dependsOn:
+    - apiVersion: v1
+      kind: Namespace
+      name: istio-system
+  inputs:
+    - namespace: istio-system
+  resources:
+    - apiVersion: v1
+      kind: Secret
+      metadata:
+        name: harbor-pull
+        namespace: << inputs.namespace >>
+        annotations:
+          fluxcd.controlplane.io/copyFrom: flux-system/harbor-pull
+      type: kubernetes.io/dockerconfigjson

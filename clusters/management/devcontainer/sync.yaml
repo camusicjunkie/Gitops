@@ -1,0 +1,43 @@
+# Applies the devcontainer repository's manifests/devcontainer: the Devcontainer
+# Namespace, Site Config, Roster, ImageRepository/ImagePolicy and the
+# ResourceSet that renders each admin's Pod, volume, Services, TCPRoute and the
+# shared Gateway. Waits for Istio, which brings the Gateway API CRDs.
+#
+# The patches localize the site-neutral ImageRepository: this network's Harbor,
+# its CA (the scanner runs in a Pod and does not trust what the nodes trust) and
+# its pull credential. Both Secrets are copied into the namespace by
+# site.yaml. The Roster's image line is not patched: the image automation
+# (site.yaml) rewrites it in Git to the newest Release on this Harbor.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: devcontainer
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: istio
+  interval: 10m
+  retryInterval: 2m
+  timeout: 10m
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: devcontainer
+  path: ./manifests/devcontainer
+  patches:
+    - target:
+        kind: ImageRepository
+        name: devcontainer-standard
+      patch: |
+        - op: replace
+          path: /spec/image
+          value: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/devcontainer/standard
+        - op: add
+          path: /spec/certSecretRef
+          value:
+            name: harbor-ca
+        - op: add
+          path: /spec/secretRef
+          value:
+            name: harbor-pull

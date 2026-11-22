@@ -1,0 +1,71 @@
+# What the Devcontainer Namespace needs from this cluster, once the devcontainer
+# Kustomization has created it:
+# - harbor-ca and harbor-pull, copied from flux-system (OpenTofu creates them)
+#   and kept in sync, for the ImageRepository and the Pods' image pulls;
+# - the default ServiceAccount pulling with harbor-pull (the Devcontainer Pods
+#   run as it, with no API token mounted);
+# - the ImageUpdateAutomation. It must live in this namespace, because an
+#   automation applies only the ImagePolicies in its own namespace. It pushes
+#   through devcontainer-push in flux-system, to the image-updates branch.
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSet
+metadata:
+  name: devcontainer-site
+  namespace: flux-system
+spec:
+  dependsOn:
+    - apiVersion: v1
+      kind: Namespace
+      name: devcontainer
+  inputs:
+    - namespace: devcontainer
+  resources:
+    - apiVersion: v1
+      kind: Secret
+      metadata:
+        name: harbor-ca
+        namespace: << inputs.namespace >>
+        annotations:
+          fluxcd.controlplane.io/copyFrom: flux-system/harbor-ca
+      type: Opaque
+    - apiVersion: v1
+      kind: Secret
+      metadata:
+        name: harbor-pull
+        namespace: << inputs.namespace >>
+        annotations:
+          fluxcd.controlplane.io/copyFrom: flux-system/harbor-pull
+      type: kubernetes.io/dockerconfigjson
+    - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: default
+        namespace: << inputs.namespace >>
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: harbor-pull
+    - apiVersion: image.toolkit.fluxcd.io/v1
+      kind: ImageUpdateAutomation
+      metadata:
+        name: devcontainer
+        namespace: << inputs.namespace >>
+      spec:
+        interval: 10m
+        sourceRef:
+          kind: GitRepository
+          name: devcontainer-push
+          namespace: flux-system
+        git:
+          checkout:
+            ref:
+              branch: main
+          commit:
+            author:
+              name: fluxcdbot
+              email: fluxcdbot@users.noreply.github.com
+            messageTemplate: "chore(images): update the Standard Image [skip ci]"
+          push:
+            branch: image-updates
+        update:
+          path: ./manifests/devcontainer
+          strategy: Setters

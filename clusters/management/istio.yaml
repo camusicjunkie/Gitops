@@ -1,0 +1,81 @@
+# Istio on the management cluster: the Gateway API CRDs (experimental channel,
+# see apps/istio/controllers/gatewayapi/update.sh), istio-base and istiod
+# only, so `gatewayClassName: istio` Gateways (the devcontainer's SSH Gateway)
+# get a gateway deployment. No mesh: istio-cni and ztunnel are left out and
+# istiod runs without the ambient profile; workloads here are reached through
+# their Gateway, not enrolled.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: istio
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 5m
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./apps/istio/controllers
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: flux-runtime-info
+  patches:
+    - patch: |
+        $patch: delete
+        apiVersion: helm.toolkit.fluxcd.io/v2
+        kind: HelmRelease
+        metadata:
+          name: istio-cni
+          namespace: istio-system
+    - patch: |
+        $patch: delete
+        apiVersion: source.toolkit.fluxcd.io/v1
+        kind: OCIRepository
+        metadata:
+          name: istio-cni
+          namespace: istio-system
+    - patch: |
+        $patch: delete
+        apiVersion: helm.toolkit.fluxcd.io/v2
+        kind: HelmRelease
+        metadata:
+          name: ztunnel
+          namespace: istio-system
+    - patch: |
+        $patch: delete
+        apiVersion: source.toolkit.fluxcd.io/v1
+        kind: OCIRepository
+        metadata:
+          name: ztunnel
+          namespace: istio-system
+    # TCP listeners (the devcontainer's SSH Gateway) need Istio's alpha Gateway
+    # API support: Istio 1.30 still gates TCPRoute behind it.
+    - target:
+        kind: HelmRelease
+        name: istiod
+      patch: |
+        - op: remove
+          path: /spec/values/profile
+        - op: add
+          path: /spec/values/pilot
+          value:
+            env:
+              PILOT_ENABLE_ALPHA_GATEWAY_API: "true"
+    - target:
+        kind: HelmRelease
+      patch: |
+        apiVersion: helm.toolkit.fluxcd.io/v2
+        kind: HelmRelease
+        metadata:
+          name: _
+        spec:
+          install:
+            crds: Create
+          upgrade:
+            crds: CreateReplace
+          driftDetection:
+            mode: enabled

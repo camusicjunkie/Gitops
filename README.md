@@ -72,15 +72,17 @@ d:/Gitops/
 │   └── supervisor/                     # vSphere Supervisor ServiceAccount, RBAC, and kubeconfig generator
 │
 ├── shared/                             # Shared ResourceSets, Notifications & Webhook Receiver
-│   ├── resourcesets/                   # generator.yaml, rsip.yaml, apps.yaml, components.yaml, operator.yaml, management/
+│   ├── resourcesets/                   # generator.yaml, rsip.yaml, apps.yaml, components.yaml, operator.yaml
 │   ├── notifications/                  # gitlab/ and msteams/ Providers, Secrets, and Alerts
 │   └── receiver/                       # GitLab push webhook Receiver, Secret, and HTTPRoute
 │
 ├── clusters/                           # Day-1+: Flux root sync manifests (cluster entrypoints only)
 │   ├── management/                     # Management cluster (ImageRepository, ImagePolicy, ImageUpdateAutomation)
 │   │   ├── flux-system/                # FluxInstance with image-reflector + image-automation controllers
+│   │   ├── gatewayapi/                 # Standard Gateway API v1.7.0 CRDs (management-only)
 │   │   ├── imageautomation/            # Automated Harbor tag scanning and Git commit back to apps/
-│   │   ├── resourcesets.yaml           # Pointer -> shared/resourcesets/management
+│   │   ├── istio.yaml                  # Self-contained Istio gateway-only ResourceSet (istio-base + istiod, no mesh)
+│   │   ├── devcontainer.yaml           # Self-contained ResourceSet syncing + automating the devcontainer repository
 │   │   └── notifications.yaml          # Pointer -> shared/notifications
 │   ├── production/                     # Production entrypoint (APPS_SUBDOMAIN: apps)
 │   │   ├── settings.yaml               # Environment ConfigMap (APPS_SUBDOMAIN, GATEWAY_CLUSTERIP)
@@ -220,14 +222,15 @@ During Day-0 bootstrap, OpenTofu injects `TF_VAR_sops_age_key` into `flux-system
 
 ### Management Cluster: Devcontainer Pods
 
-The admins' Devcontainer Pods (the `k8scontainer` repository) run on the management cluster, apart from workloads. `clusters/management/resourcesets.yaml` points at [`shared/resourcesets/management/`](shared/resourcesets/management/kustomization.yaml), which contains two `ResourceSet`s:
+The admins' Devcontainer Pods (the `k8scontainer` repository) run on the management cluster, apart from workload clusters. `clusters/management/` is self-contained and independent of `apps/` and `shared/resourcesets/`:
 
-* **`istio.yaml`**: owns `Namespace/istio-system` (`prune: disabled`, without `privileged` PSA), copies `harbor-pull` and `harbor-ca` from `flux-system`, and reconciles `apps/istio/controllers` without `Namespace/istio-system`, `istio-cni`, `ztunnel`, or the ambient profile so `gatewayClassName: istio` Gateways get a gateway Deployment and nothing joins a mesh. `OCIRepository` sources are patched with `certSecretRef: harbor-ca` and `secretRef: harbor-pull`, and istiod pulls from the Harbor mirror directly (`global.hub: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/istio`, `global.imagePullSecrets: [harbor-pull]`).
-* **`devcontainer.yaml`**: owns `Namespace/devcontainer` (`restricted` PSA, `prune: disabled` so admin PVCs are never pruned), copies `harbor-ca` and `harbor-pull` from `flux-system`, configures `ServiceAccount/default` (`prune: disabled`, `harbor-pull`, `automountServiceAccountToken: false`), defines the read-only (`devcontainer`, secret `devcontainer-git`) and push (`devcontainer-push`, secret `devcontainer-git-push`) `GitRepository` objects, syncs `./manifests/devcontainer` (patching out `Namespace/devcontainer` and configuring `ImageRepository` with Harbor + `harbor-ca` + `harbor-pull`), and runs the namespace's `ImageUpdateAutomation` pushing Release tags to `image-updates`.
+* **`gatewayapi/`**: vendors the standard Gateway API `v1.7.0` CRDs (`TCPRoute` GA at `v1`) directly for the management cluster.
+* **`istio.yaml`**: a patch-free `ResourceSet` that waits for Gateway API CRDs, owns `Namespace/istio-system` (`prune: disabled`, without `privileged` PSA), copies `harbor-pull` and `harbor-ca` from `flux-system`, and deploys `istio-base` and `istiod` (`1.32.0`) directly without `istio-cni`, `ztunnel`, or the ambient profile so `gatewayClassName: istio` Gateways get a gateway Deployment and nothing joins a mesh. With no Kyverno here, `OCIRepository` sources configure `certSecretRef: harbor-ca` and `secretRef: harbor-pull`, and `istiod` sets `global.hub: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/istio` and `global.imagePullSecrets: [harbor-pull]`.
+* **`devcontainer.yaml`**: a `ResourceSet` that waits for `HelmRelease/istiod` (`ready: true`), owns `Namespace/devcontainer` (`restricted` PSA, `prune: disabled` so admin PVCs are never pruned), copies `harbor-ca` and `harbor-pull` from `flux-system`, configures `ServiceAccount/default` (`prune: disabled`, `harbor-pull`, `automountServiceAccountToken: false`), defines the read-only (`devcontainer`, secret `devcontainer-git`) and push (`devcontainer-push`, secret `devcontainer-git-push`) `GitRepository` objects, syncs `./manifests/devcontainer` (patching out `Namespace/devcontainer` and configuring `ImageRepository` with Harbor + `harbor-ca` + `harbor-pull`), and runs the namespace's `ImageUpdateAutomation` pushing Release tags to `image-updates`.
 
 Supply the `TF_VAR_devcontainer_*` variables and `TF_VAR_harbor_ca` when bootstrapping the management cluster. Because GitLab Deploy Tokens only support `read_repository`, a GitLab group deploy token can serve as both read tokens (`gitlab_deploy_token` and `devcontainer_deploy_token`), while `TF_VAR_devcontainer_push_token` requires a Project or Group Access Token with `write_repository`.
 
-**Gateway API and Istio versions.** `apps/istio/controllers/gatewayapi/crds.yaml` is the **standard** v1.7.0 bundle, and Istio is 1.32 on every cluster: Istio reads TCPRoute at `v1` (GA in Gateway API v1.6.0) only from 1.31 (istio/istio#60766); 1.30 read `v1alpha2`, which the standard channel no longer serves. From v1.7.0 the bundle carries a `safe-upgrades` ValidatingAdmissionPolicy (Kubernetes 1.30+) that refuses CRD downgrades. Istio 1.31+ publishes upstream charts at `blob.istio.io/istio-release/charts` (OCI: `ghcr.io/istio/release/charts`); this repository mirrors DHI's builds (`bootstrap/mirror/platform.yaml`).
+**Gateway API and Istio versions.** Both `apps/istio/controllers/gatewayapi/crds.yaml` and `clusters/management/gatewayapi/crds.yaml` vendor the **standard** v1.7.0 bundle, and Istio is 1.32.0: Istio reads TCPRoute at `v1` (GA in Gateway API v1.6.0) only from 1.31 (istio/istio#60766); 1.30 read `v1alpha2`, which the standard channel no longer serves. From v1.7.0 the bundle carries a `safe-upgrades` ValidatingAdmissionPolicy (Kubernetes 1.30+) that refuses CRD downgrades. Istio 1.31+ publishes upstream charts at `blob.istio.io/istio-release/charts` (OCI: `ghcr.io/istio/release/charts`); this repository mirrors DHI's builds (`bootstrap/mirror/platform.yaml`).
 
 ### Blue/Green Cutover & Retirement
 

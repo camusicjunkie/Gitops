@@ -1,35 +1,27 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Operator (SA/RBAC/Deployment from operator.yml) runs in the keycloak ns.
-# Cluster-scoped resources (the two CRDs, the ClusterRoleBindings) are
-# unaffected by this namespace setting.
+# Operator (SA/RBAC/Deployment from cluster-wide/kubernetes.yml) runs in the
+# keycloak namespace while watching all namespaces (JOSDK_ALL_NAMESPACES).
 namespace: keycloak
 
 resources:
-  # vendored upstream (keycloak-k8s-resources @ 26.6.3) — see update.sh
+  # vendored upstream (keycloak-k8s-resources @ 26.8.2) — see update.sh
   - crds/keycloaks.k8s.keycloak.org.yml
   - crds/keycloakrealmimports.k8s.keycloak.org.yml
+  - crds/keycloakoidcclients.k8s.keycloak.org.yml
+  - crds/keycloaksamlclients.k8s.keycloak.org.yml
   - operator.yml
-  # local additions
+  # local addition
   - namespace.yaml
-  - clusterrolebindings.yaml
 
-patches:
-  # Watch all namespaces so the Keycloak CR can live in sso (and any future app
-  # namespace), like cnpg/istio. Strategic-merge by env var name (upgrade-safe).
-  - patch: |
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: keycloak-operator
-      spec:
-        template:
-          spec:
-            containers:
-              - name: keycloak-operator
-                env:
-                  - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKCONTROLLER_NAMESPACES
-                    value: JOSDK_ALL_NAMESPACES
-                  - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_KEYCLOAKREALMIMPORTCONTROLLER_NAMESPACES
-                    value: JOSDK_ALL_NAMESPACES
+transformers:
+  - |-
+    apiVersion: builtin
+    kind: NamespaceTransformer
+    metadata:
+      name: keycloak-namespace
+    setRoleBindingSubjects: allServiceAccounts
+    fieldSpecs:
+      - path: metadata/namespace
+        create: true

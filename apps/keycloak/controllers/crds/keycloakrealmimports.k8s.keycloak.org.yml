@@ -1767,6 +1767,29 @@ spec:
                           type: "array"
                         id:
                           type: "string"
+                        issuedVerifiableCredentials:
+                          items:
+                            properties:
+                              clientBaseUrl:
+                                type: "string"
+                              clientId:
+                                type: "string"
+                              clientName:
+                                type: "string"
+                              credentialType:
+                                type: "string"
+                              expiresAt:
+                                type: "integer"
+                              id:
+                                type: "string"
+                              issuedAt:
+                                type: "integer"
+                              revision:
+                                type: "string"
+                              userId:
+                                type: "string"
+                            type: "object"
+                          type: "array"
                         lastName:
                           type: "string"
                         notBefore:
@@ -1847,6 +1870,27 @@ spec:
                           type: "object"
                         username:
                           type: "string"
+                        verifiableCredentials:
+                          items:
+                            properties:
+                              createdDate:
+                                type: "integer"
+                              credentialConfigurationId:
+                                type: "string"
+                              credentialScopeName:
+                                type: "string"
+                              revision:
+                                type: "string"
+                              updatedDate:
+                                type: "integer"
+                              userAttributes:
+                                additionalProperties:
+                                  items:
+                                    type: "string"
+                                  type: "array"
+                                type: "object"
+                            type: "object"
+                          type: "array"
                       type: "object"
                     type: "array"
                   firstBrokerLoginFlow:
@@ -2302,8 +2346,17 @@ spec:
                           type: "string"
                         linkOnly:
                           type: "boolean"
-                        organizationId:
-                          type: "string"
+                        organizationLinks:
+                          items:
+                            properties:
+                              autoMembership:
+                                type: "boolean"
+                              membershipType:
+                                type: "string"
+                              organizationId:
+                                type: "string"
+                            type: "object"
+                          type: "array"
                         postBrokerLoginFlowAlias:
                           type: "string"
                         providerId:
@@ -2732,6 +2785,10 @@ spec:
                         domains:
                           items:
                             properties:
+                              autoRedirect:
+                                type: "boolean"
+                              identityProviderAlias:
+                                type: "string"
                               name:
                                 type: "string"
                               verified:
@@ -3174,8 +3231,17 @@ spec:
                                 type: "string"
                               linkOnly:
                                 type: "boolean"
-                              organizationId:
-                                type: "string"
+                              organizationLinks:
+                                items:
+                                  properties:
+                                    autoMembership:
+                                      type: "boolean"
+                                    membershipType:
+                                      type: "string"
+                                    organizationId:
+                                      type: "string"
+                                  type: "object"
+                                type: "array"
                               postBrokerLoginFlowAlias:
                                 type: "string"
                               providerId:
@@ -3316,6 +3382,29 @@ spec:
                                 type: "array"
                               id:
                                 type: "string"
+                              issuedVerifiableCredentials:
+                                items:
+                                  properties:
+                                    clientBaseUrl:
+                                      type: "string"
+                                    clientId:
+                                      type: "string"
+                                    clientName:
+                                      type: "string"
+                                    credentialType:
+                                      type: "string"
+                                    expiresAt:
+                                      type: "integer"
+                                    id:
+                                      type: "string"
+                                    issuedAt:
+                                      type: "integer"
+                                    revision:
+                                      type: "string"
+                                    userId:
+                                      type: "string"
+                                  type: "object"
+                                type: "array"
                               lastName:
                                 type: "string"
                               membershipType:
@@ -3401,6 +3490,27 @@ spec:
                                 type: "object"
                               username:
                                 type: "string"
+                              verifiableCredentials:
+                                items:
+                                  properties:
+                                    createdDate:
+                                      type: "integer"
+                                    credentialConfigurationId:
+                                      type: "string"
+                                    credentialScopeName:
+                                      type: "string"
+                                    revision:
+                                      type: "string"
+                                    updatedDate:
+                                      type: "integer"
+                                    userAttributes:
+                                      additionalProperties:
+                                        items:
+                                          type: "string"
+                                        type: "array"
+                                      type: "object"
+                                  type: "object"
+                                type: "array"
                             type: "object"
                           type: "array"
                         name:
@@ -3855,6 +3965,29 @@ spec:
                           type: "array"
                         id:
                           type: "string"
+                        issuedVerifiableCredentials:
+                          items:
+                            properties:
+                              clientBaseUrl:
+                                type: "string"
+                              clientId:
+                                type: "string"
+                              clientName:
+                                type: "string"
+                              credentialType:
+                                type: "string"
+                              expiresAt:
+                                type: "integer"
+                              id:
+                                type: "string"
+                              issuedAt:
+                                type: "integer"
+                              revision:
+                                type: "string"
+                              userId:
+                                type: "string"
+                            type: "object"
+                          type: "array"
                         lastName:
                           type: "string"
                         notBefore:
@@ -3935,6 +4068,27 @@ spec:
                           type: "object"
                         username:
                           type: "string"
+                        verifiableCredentials:
+                          items:
+                            properties:
+                              createdDate:
+                                type: "integer"
+                              credentialConfigurationId:
+                                type: "string"
+                              credentialScopeName:
+                                type: "string"
+                              revision:
+                                type: "string"
+                              updatedDate:
+                                type: "integer"
+                              userAttributes:
+                                additionalProperties:
+                                  items:
+                                    type: "string"
+                                  type: "array"
+                                type: "object"
+                            type: "object"
+                          type: "array"
                       type: "object"
                     type: "array"
                   verifiableCredentialsEnabled:
@@ -3975,9 +4129,13 @@ spec:
                     items:
                       type: "string"
                     type: "array"
+                  webAuthnPolicyPasswordlessMediation:
+                    type: "string"
                   webAuthnPolicyPasswordlessPasskeysEnabled:
                     type: "boolean"
                   webAuthnPolicyPasswordlessRequireResidentKey:
+                    type: "string"
+                  webAuthnPolicyPasswordlessResidentKey:
                     type: "string"
                   webAuthnPolicyPasswordlessRpEntityName:
                     type: "string"
@@ -3990,6 +4148,8 @@ spec:
                   webAuthnPolicyPasswordlessUserVerificationRequirement:
                     type: "string"
                   webAuthnPolicyRequireResidentKey:
+                    type: "string"
+                  webAuthnPolicyResidentKey:
                     type: "string"
                   webAuthnPolicyRpEntityName:
                     type: "string"
@@ -5815,6 +5975,29 @@ spec:
                           type: "array"
                         id:
                           type: "string"
+                        issuedVerifiableCredentials:
+                          items:
+                            properties:
+                              clientBaseUrl:
+                                type: "string"
+                              clientId:
+                                type: "string"
+                              clientName:
+                                type: "string"
+                              credentialType:
+                                type: "string"
+                              expiresAt:
+                                type: "integer"
+                              id:
+                                type: "string"
+                              issuedAt:
+                                type: "integer"
+                              revision:
+                                type: "string"
+                              userId:
+                                type: "string"
+                            type: "object"
+                          type: "array"
                         lastName:
                           type: "string"
                         notBefore:
@@ -5895,6 +6078,27 @@ spec:
                           type: "object"
                         username:
                           type: "string"
+                        verifiableCredentials:
+                          items:
+                            properties:
+                              createdDate:
+                                type: "integer"
+                              credentialConfigurationId:
+                                type: "string"
+                              credentialScopeName:
+                                type: "string"
+                              revision:
+                                type: "string"
+                              updatedDate:
+                                type: "integer"
+                              userAttributes:
+                                additionalProperties:
+                                  items:
+                                    type: "string"
+                                  type: "array"
+                                type: "object"
+                            type: "object"
+                          type: "array"
                       type: "object"
                     type: "array"
                   firstBrokerLoginFlow:
@@ -6350,8 +6554,17 @@ spec:
                           type: "string"
                         linkOnly:
                           type: "boolean"
-                        organizationId:
-                          type: "string"
+                        organizationLinks:
+                          items:
+                            properties:
+                              autoMembership:
+                                type: "boolean"
+                              membershipType:
+                                type: "string"
+                              organizationId:
+                                type: "string"
+                            type: "object"
+                          type: "array"
                         postBrokerLoginFlowAlias:
                           type: "string"
                         providerId:
@@ -6780,6 +6993,10 @@ spec:
                         domains:
                           items:
                             properties:
+                              autoRedirect:
+                                type: "boolean"
+                              identityProviderAlias:
+                                type: "string"
                               name:
                                 type: "string"
                               verified:
@@ -7222,8 +7439,17 @@ spec:
                                 type: "string"
                               linkOnly:
                                 type: "boolean"
-                              organizationId:
-                                type: "string"
+                              organizationLinks:
+                                items:
+                                  properties:
+                                    autoMembership:
+                                      type: "boolean"
+                                    membershipType:
+                                      type: "string"
+                                    organizationId:
+                                      type: "string"
+                                  type: "object"
+                                type: "array"
                               postBrokerLoginFlowAlias:
                                 type: "string"
                               providerId:
@@ -7364,6 +7590,29 @@ spec:
                                 type: "array"
                               id:
                                 type: "string"
+                              issuedVerifiableCredentials:
+                                items:
+                                  properties:
+                                    clientBaseUrl:
+                                      type: "string"
+                                    clientId:
+                                      type: "string"
+                                    clientName:
+                                      type: "string"
+                                    credentialType:
+                                      type: "string"
+                                    expiresAt:
+                                      type: "integer"
+                                    id:
+                                      type: "string"
+                                    issuedAt:
+                                      type: "integer"
+                                    revision:
+                                      type: "string"
+                                    userId:
+                                      type: "string"
+                                  type: "object"
+                                type: "array"
                               lastName:
                                 type: "string"
                               membershipType:
@@ -7449,6 +7698,27 @@ spec:
                                 type: "object"
                               username:
                                 type: "string"
+                              verifiableCredentials:
+                                items:
+                                  properties:
+                                    createdDate:
+                                      type: "integer"
+                                    credentialConfigurationId:
+                                      type: "string"
+                                    credentialScopeName:
+                                      type: "string"
+                                    revision:
+                                      type: "string"
+                                    updatedDate:
+                                      type: "integer"
+                                    userAttributes:
+                                      additionalProperties:
+                                        items:
+                                          type: "string"
+                                        type: "array"
+                                      type: "object"
+                                  type: "object"
+                                type: "array"
                             type: "object"
                           type: "array"
                         name:
@@ -7903,6 +8173,29 @@ spec:
                           type: "array"
                         id:
                           type: "string"
+                        issuedVerifiableCredentials:
+                          items:
+                            properties:
+                              clientBaseUrl:
+                                type: "string"
+                              clientId:
+                                type: "string"
+                              clientName:
+                                type: "string"
+                              credentialType:
+                                type: "string"
+                              expiresAt:
+                                type: "integer"
+                              id:
+                                type: "string"
+                              issuedAt:
+                                type: "integer"
+                              revision:
+                                type: "string"
+                              userId:
+                                type: "string"
+                            type: "object"
+                          type: "array"
                         lastName:
                           type: "string"
                         notBefore:
@@ -7983,6 +8276,27 @@ spec:
                           type: "object"
                         username:
                           type: "string"
+                        verifiableCredentials:
+                          items:
+                            properties:
+                              createdDate:
+                                type: "integer"
+                              credentialConfigurationId:
+                                type: "string"
+                              credentialScopeName:
+                                type: "string"
+                              revision:
+                                type: "string"
+                              updatedDate:
+                                type: "integer"
+                              userAttributes:
+                                additionalProperties:
+                                  items:
+                                    type: "string"
+                                  type: "array"
+                                type: "object"
+                            type: "object"
+                          type: "array"
                       type: "object"
                     type: "array"
                   verifiableCredentialsEnabled:
@@ -8023,9 +8337,13 @@ spec:
                     items:
                       type: "string"
                     type: "array"
+                  webAuthnPolicyPasswordlessMediation:
+                    type: "string"
                   webAuthnPolicyPasswordlessPasskeysEnabled:
                     type: "boolean"
                   webAuthnPolicyPasswordlessRequireResidentKey:
+                    type: "string"
+                  webAuthnPolicyPasswordlessResidentKey:
                     type: "string"
                   webAuthnPolicyPasswordlessRpEntityName:
                     type: "string"
@@ -8038,6 +8356,8 @@ spec:
                   webAuthnPolicyPasswordlessUserVerificationRequirement:
                     type: "string"
                   webAuthnPolicyRequireResidentKey:
+                    type: "string"
+                  webAuthnPolicyResidentKey:
                     type: "string"
                   webAuthnPolicyRpEntityName:
                     type: "string"

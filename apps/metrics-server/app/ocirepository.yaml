@@ -10,4 +10,4 @@ spec:
     mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
     operation: copy
   ref:
-    tag: "0.0.0" # {"$imagepolicy": "flux-system:metrics-server-chart:tag"}
+    tag: "7.4.12" # {"$imagepolicy": "flux-system:metrics-server-chart:tag"}

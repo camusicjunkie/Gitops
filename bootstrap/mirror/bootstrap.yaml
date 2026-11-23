@@ -24,7 +24,7 @@ artifacts:
   - source: ghcr.io/controlplaneio-fluxcd/flux-operator-bootstrap
     destination: ${HARBOR_HOST}/${HARBOR_PROJECT}/flux/flux-operator-bootstrap
     selector:
-      semver: ">=0.8.0"
+      semver: ">=0.10.0"
       limit: 3
     includeReferrers: true
 

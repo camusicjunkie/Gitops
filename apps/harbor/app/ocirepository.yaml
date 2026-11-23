@@ -10,4 +10,4 @@ spec:
     mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
     operation: copy
   ref:
-    tag: "1.19.0" # {"$imagepolicy": "flux-system:harbor-chart:tag"}
+    tag: "1.19.4" # {"$imagepolicy": "flux-system:harbor-chart:tag"}

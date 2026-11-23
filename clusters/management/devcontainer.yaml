@@ -1,4 +1,5 @@
 # Devcontainer Pods (camusicjunkie/k8scontainer) on the management cluster:
+# - Waits for istiod to be Ready (which in turn waits for Gateway API CRDs).
 # - Owns Namespace/devcontainer (restricted PSA, prune: disabled) so admin PVCs
 #   are never pruned, copies harbor-ca and harbor-pull from flux-system, and
 #   sets harbor-pull on the default ServiceAccount (no API token mounted).
@@ -14,6 +15,12 @@ metadata:
   name: devcontainer
   namespace: flux-system
 spec:
+  dependsOn:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: istiod
+      namespace: istio-system
+      ready: true
   inputs:
     - namespace: devcontainer
   resources:
@@ -82,8 +89,6 @@ spec:
         name: devcontainer
         namespace: flux-system
       spec:
-        dependsOn:
-          - name: istio
         interval: 10m
         retryInterval: 2m
         timeout: 10m

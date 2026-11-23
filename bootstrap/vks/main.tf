@@ -41,9 +41,9 @@ provider "helm" {
 
 module "flux_operator_bootstrap" {
   # For air-gapped environments, mirror this module to internal GitLab and update source:
-  # source = "git::https://<gitlab-host>/mirrors/terraform-kubernetes-flux-operator-bootstrap.git?ref=v0.8.0"
+  # source = "git::https://<gitlab-host>/mirrors/terraform-kubernetes-flux-operator-bootstrap.git?ref=v0.10.0"
   source  = "controlplaneio-fluxcd/flux-operator-bootstrap/kubernetes"
-  version = "~> 0.8.0"
+  version = "~> 0.10.0"
 
   revision = var.bootstrap_revision
 

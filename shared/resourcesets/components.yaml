@@ -3,111 +3,131 @@ kind: ResourceSet
 metadata:
   name: components
   namespace: flux-system
+  annotations:
+    fluxcd.controlplane.io/reconcileTimeout: "20m"
 spec:
+  wait: true
   inputs:
     - name: cert-manager
       controllersPath: apps/cert-manager/controllers
       configsName: cert-manager-configs
       configsPath: apps/cert-manager/configs
+      configsDependsOn:
+        - cert-manager
     - name: istio
       controllersPath: apps/istio/controllers
       configsName: istio-gateway
       configsPath: apps/istio/configs
+      configsDependsOn:
+        - istio
+        - cert-manager-configs
     - name: kyverno
       controllersPath: apps/kyverno/controllers
       configsName: kyverno-policies
       configsPath: apps/kyverno/configs
+      configsDependsOn:
+        - kyverno
     - name: cnpg
       controllersPath: apps/cnpg/controllers
       configsName: cnpg-configs
       configsPath: apps/cnpg/configs
+      configsDependsOn:
+        - cnpg
     - name: keycloak-operator
       controllersPath: apps/keycloak/controllers
       configsName: keycloak
       configsPath: apps/keycloak/configs
-  resources:
-    - apiVersion: kustomize.toolkit.fluxcd.io/v1
-      kind: Kustomization
-      metadata:
-        name: << inputs.name >>
-        namespace: << inputs.provider.namespace >>
-      spec:
-        interval: 1h
-        retryInterval: 2m
-        timeout: 5m
-        prune: true
-        wait: true
-        sourceRef:
-          kind: GitRepository
-          name: flux-system
-        path: ./<< inputs.controllersPath >>
-        decryption:
-          provider: sops
-          secretRef:
-            name: sops-age
-        postBuild:
-          substituteFrom:
-            - kind: ConfigMap
-              name: cluster-settings
-            - kind: ConfigMap
-              name: flux-runtime-info
-              optional: true
-        patches:
-          - target:
-              kind: HelmRelease
-              labelSelector: helm-defaults notin (disabled)
-            patch: |
-              apiVersion: helm.toolkit.fluxcd.io/v2
-              kind: HelmRelease
-              metadata:
-                name: _
-              spec:
-                install:
-                  crds: Create
-                upgrade:
-                  crds: CreateReplace
-                driftDetection:
-                  mode: enabled
-    - apiVersion: kustomize.toolkit.fluxcd.io/v1
-      kind: Kustomization
-      metadata:
-        name: << inputs.configsName >>
-        namespace: << inputs.provider.namespace >>
-      spec:
-        dependsOn:
-          - name: << inputs.name >>
-        interval: 1h
-        retryInterval: 2m
-        timeout: 5m
-        prune: true
-        sourceRef:
-          kind: GitRepository
-          name: flux-system
-        path: ./<< inputs.configsPath >>
-        decryption:
-          provider: sops
-          secretRef:
-            name: sops-age
-        postBuild:
-          substituteFrom:
-            - kind: ConfigMap
-              name: cluster-settings
-            - kind: ConfigMap
-              name: flux-runtime-info
-              optional: true
-        patches:
-          - target:
-              kind: HelmRelease
-              labelSelector: helm-defaults notin (disabled)
-            patch: |
-              apiVersion: helm.toolkit.fluxcd.io/v2
-              kind: HelmRelease
-              metadata:
-                name: _
-              spec:
-                install:
-                  crds: Create
-                upgrade:
-                  crds: CreateReplace
-                driftDetection:
-                  mode: enabled
+      configsDependsOn:
+        - keycloak-operator
+        - cnpg-configs
+        - istio-gateway
+  resourcesTemplate: |
+    apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: << inputs.name >>
+      namespace: << inputs.provider.namespace >>
+    spec:
+      interval: 1h
+      retryInterval: 2m
+      timeout: 5m
+      prune: true
+      wait: true
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+      path: ./<< inputs.controllersPath >>
+      decryption:
+        provider: sops
+        secretRef:
+          name: sops-age
+      postBuild:
+        substituteFrom:
+          - kind: ConfigMap
+            name: cluster-settings
+          - kind: ConfigMap
+            name: flux-runtime-info
+            optional: true
+      patches:
+        - target:
+            kind: HelmRelease
+            labelSelector: helm-defaults notin (disabled)
+          patch: |
+            apiVersion: helm.toolkit.fluxcd.io/v2
+            kind: HelmRelease
+            metadata:
+              name: _
+            spec:
+              install:
+                crds: Create
+              upgrade:
+                crds: CreateReplace
+              driftDetection:
+                mode: enabled
+    ---
+    apiVersion: kustomize.toolkit.fluxcd.io/v1
+    kind: Kustomization
+    metadata:
+      name: << inputs.configsName >>
+      namespace: << inputs.provider.namespace >>
+    spec:
+      dependsOn:
+        <<- range $dep := inputs.configsDependsOn >>
+        - name: << $dep >>
+        <<- end >>
+      interval: 1h
+      retryInterval: 2m
+      timeout: 10m
+      prune: true
+      wait: true
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+      path: ./<< inputs.configsPath >>
+      decryption:
+        provider: sops
+        secretRef:
+          name: sops-age
+      postBuild:
+        substituteFrom:
+          - kind: ConfigMap
+            name: cluster-settings
+          - kind: ConfigMap
+            name: flux-runtime-info
+            optional: true
+      patches:
+        - target:
+            kind: HelmRelease
+            labelSelector: helm-defaults notin (disabled)
+          patch: |
+            apiVersion: helm.toolkit.fluxcd.io/v2
+            kind: HelmRelease
+            metadata:
+              name: _
+            spec:
+              install:
+                crds: Create
+              upgrade:
+                crds: CreateReplace
+              driftDetection:
+                mode: enabled

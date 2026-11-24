@@ -4,6 +4,7 @@ namespace: sso
 resources:
   - cronjob.yaml
   - secret.yaml
+  - secrets
 
 # The realm config is mounted into the CronJob from this ConfigMap.
 # Keys keep numeric prefixes so keycloak-config-cli imports /config/*.yaml in dependency order,

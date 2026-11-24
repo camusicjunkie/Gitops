@@ -1,10 +1,10 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: blueandblack-wildcard
+  name: apps-wildcard
   namespace: istio-system
 spec:
-  secretName: blueandblack-wildcard-tls
+  secretName: apps-wildcard-tls
   issuerRef:
     name: ${CLUSTER_ISSUER}
     kind: ClusterIssuer

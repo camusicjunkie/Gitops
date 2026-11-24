@@ -4,6 +4,12 @@ metadata:
   name: apps
   namespace: flux-system
 spec:
+  dependsOn:
+    - apiVersion: fluxcd.controlplane.io/v1
+      kind: ResourceSet
+      name: components
+      namespace: flux-system
+      ready: true
   inputsFrom:
     - kind: ResourceSetInputProvider
       name: apps
@@ -19,9 +25,9 @@ spec:
         timeout: 5m
         prune: true
         sourceRef:
-          kind: GitRepository
-          name: flux-system
-        path: ./apps/<< inputs.app >>/app
+          kind: ExternalArtifact
+          name: << inputs.name >>
+        path: ./
         decryption:
           provider: sops
           secretRef:

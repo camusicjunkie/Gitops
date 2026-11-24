@@ -15,6 +15,10 @@ spec:
       spec:
         interval: 30m
         url: oci://${HARBOR_REGISTRY}/${HARBOR_PROJECT}/flux/charts/flux-operator
+        certSecretRef:
+          name: harbor-ca
+        secretRef:
+          name: harbor-pull
         layerSelector:
           mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
           operation: copy
@@ -27,6 +31,7 @@ spec:
         namespace: << inputs.provider.namespace >>
       spec:
         interval: 30m
+        timeout: 5m
         releaseName: << inputs.provider.name >>
         serviceAccountName: << inputs.provider.name >>
         chartRef:

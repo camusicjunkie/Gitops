@@ -6,3 +6,4 @@ resources:
   - rsip.yaml
   - apps.yaml
   - operator.yaml
+  - secret.yaml

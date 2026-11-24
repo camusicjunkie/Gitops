@@ -191,7 +191,7 @@ With **GitLab's Harbor integration** enabled (providing `HARBOR_HOST`, `HARBOR_P
 
 ```bash
 sops --encrypt --in-place apps/cert-manager/configs/ca/secret.yaml
-sops --encrypt --in-place apps/headlamp/app/secrets/client.yaml
+sops --encrypt --in-place apps/keycloak/configs/configcli/secrets/headlamp.yaml
 sops --encrypt --in-place apps/headlamp/app/secrets/oidc.yaml
 sops --encrypt --in-place apps/keycloak/configs/secret.yaml
 sops --encrypt --in-place apps/cnpg/configs/keycloak/secret.yaml
@@ -200,6 +200,7 @@ sops --encrypt --in-place apps/stigman/app/mysql/secret.yaml
 sops --encrypt --in-place shared/notifications/gitlab/secret.yaml
 sops --encrypt --in-place shared/notifications/msteams/secret.yaml
 sops --encrypt --in-place shared/receiver/secret.yaml
+sops --encrypt --in-place shared/resourcesets/secret.yaml
 ```
 
 During Day-0 bootstrap, OpenTofu injects `TF_VAR_sops_age_key` into `flux-system/sops-age`, and both `flux-system` and `ResourceSet` Kustomizations decrypt secrets automatically via `spec.decryption.provider: sops`.

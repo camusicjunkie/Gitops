@@ -26,7 +26,7 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: blueandblack-wildcard-tls
+            name: apps-wildcard-tls
       allowedRoutes:
         namespaces:
           from: All

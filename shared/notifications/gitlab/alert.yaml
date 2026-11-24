@@ -15,15 +15,31 @@ spec:
   eventSources:
     - kind: GitRepository
       name: "*"
+      namespace: "*"
     - kind: OCIRepository
       name: "*"
+      namespace: "*"
     - kind: Kustomization
       name: "*"
+      namespace: "*"
     - kind: HelmRelease
       name: "*"
+      namespace: "*"
     - kind: ImageRepository
       name: "*"
+      namespace: "*"
     - kind: ImagePolicy
       name: "*"
+      namespace: "*"
     - kind: ImageUpdateAutomation
       name: "*"
+      namespace: "*"
+    - kind: ResourceSet
+      name: "*"
+      namespace: "*"
+    - kind: ResourceSetInputProvider
+      name: "*"
+      namespace: "*"
+    - kind: ArtifactGenerator
+      name: "*"
+      namespace: "*"

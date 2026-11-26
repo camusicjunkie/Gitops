@@ -160,6 +160,19 @@ module "flux_operator_bootstrap" {
       },
       local.cluster_env == "management" ? {
         DEVCONTAINER_REPO_URL = var.devcontainer_repo_url
+        # Site Config for the Devcontainer Pods (k8scontainer's site-config),
+        # base64 so multi-line values survive substitution. Login shells source
+        # site.env, so values are single-quoted. Never empty: Flux
+        # substitutes after kustomize drops quotes, so "" would become null.
+        DEVCONTAINER_SITE_ENV_B64 = base64encode(join("", concat(
+          ["# Site Config from bootstrap (devcontainer_site_env)\n"],
+          [for k in sort(keys(var.devcontainer_site_env)) : "${k}='${replace(var.devcontainer_site_env[k], "'", "'\\''")}'\n"]
+        )))
+        DEVCONTAINER_SITE_CA_B64 = base64encode(coalesce(
+          var.devcontainer_site_ca, var.harbor_ca, "# no site CA (devcontainer_site_ca and harbor_ca are empty)\n"
+        ))
+        DEVCONTAINER_GATEWAY_ADDRESS = var.devcontainer_gateway_address
+        DEVCONTAINER_POD_CIDR        = var.devcontainer_pod_cidr
       } : {}
     )
   }

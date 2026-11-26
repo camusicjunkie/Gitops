@@ -87,6 +87,42 @@ variable "devcontainer_repo_url" {
   description = "Devcontainer repository URL (k8scontainer) on this network's GitLab, as DEVCONTAINER_REPO_URL in flux-runtime-info. Management clusters only. Set per GitLab instance, never committed."
 }
 
+variable "devcontainer_site_env" {
+  type        = map(string)
+  default     = {}
+  description = "Site Config site.env for the Devcontainer Pods (KLOGIN_SERVERS, KLOGIN_NAMESPACES, KLOGIN_CLUSTERS, KLOGIN_INSECURE, AI_GATEWAY_URL), as DEVCONTAINER_SITE_ENV_B64 in flux-runtime-info. Management clusters only. Never committed."
+  validation {
+    condition     = alltrue([for k, v in var.devcontainer_site_env : can(regex("^[A-Z_][A-Z0-9_]*$", k)) && !can(regex("[\\r\\n]", v))])
+    error_message = "devcontainer_site_env keys must be shell variable names and values single lines."
+  }
+}
+
+variable "devcontainer_site_ca" {
+  type        = string
+  default     = ""
+  description = "PEM CA certificates the Devcontainer Pods trust (Site Config site-ca.crt), as DEVCONTAINER_SITE_CA_B64. Empty: harbor_ca. Management clusters only."
+}
+
+variable "devcontainer_gateway_address" {
+  type        = string
+  default     = ""
+  description = "IP address to pin on the Devcontainer Pods' shared Gateway (the Roster's gatewayAddress), as DEVCONTAINER_GATEWAY_ADDRESS. Give it a DNS name in Infoblox. Empty: the Roster's default `none`, and the load balancer picks one, which can change if the Gateway is recreated. Management clusters only."
+  validation {
+    condition     = var.devcontainer_gateway_address == "" || (can(regex("^[0-9]+(\\.[0-9]+){3}$", var.devcontainer_gateway_address)) && can(cidrhost("${var.devcontainer_gateway_address}/32", 0)))
+    error_message = "devcontainer_gateway_address must be empty or an IPv4 address."
+  }
+}
+
+variable "devcontainer_pod_cidr" {
+  type        = string
+  default     = "192.168.0.0/16"
+  description = "The management cluster's Pod CIDR, which the Devcontainer Pods' NetworkPolicy keeps them from reaching, as DEVCONTAINER_POD_CIDR. Default: VKS's default Pod network. Management clusters only."
+  validation {
+    condition     = can(cidrnetmask(var.devcontainer_pod_cidr))
+    error_message = "devcontainer_pod_cidr must be an IPv4 CIDR."
+  }
+}
+
 variable "devcontainer_deploy_token_username" {
   type      = string
   sensitive = true

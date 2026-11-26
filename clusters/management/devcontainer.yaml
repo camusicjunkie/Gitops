@@ -1,14 +1,19 @@
 # Devcontainer Pods (camusicjunkie/k8scontainer) on the management cluster:
 # - Waits for istiod to be Ready (which in turn waits for Gateway API CRDs).
-# - Owns Namespace/devcontainer (restricted PSA, prune: disabled) so admin PVCs
-#   are never pruned, copies harbor-ca and harbor-pull from flux-system, and
-#   sets harbor-pull on the default ServiceAccount (no API token mounted).
+# - Owns Namespace/devcontainer (restricted PSA, prune disabled for both the
+#   ResourceSet and kustomize-controller) so admin PVCs are never pruned,
+#   copies harbor-ca and harbor-pull from flux-system, and sets harbor-pull on the default ServiceAccount (no API token mounted).
 # - Defines read-only (devcontainer) and push (devcontainer-push) GitRepositories
 #   for ${DEVCONTAINER_REPO_URL}, matching image-automation-push's token split.
-# - Syncs ./manifests/devcontainer without wait: true (before the first
-#   image-updates MR merges, the Roster names harbor.example and cannot pull).
+# - Syncs ./manifests/devcontainer without wait: true, substituting this
+#   network's runtime facts from flux-runtime-info (postBuild): the repository
+#   commits nothing network-specific and reads HARBOR_REGISTRY, HARBOR_PROJECT
+#   and the DEVCONTAINER_* facts bootstrap writes (Site Config, Gateway
+#   address, Pod CIDR) as Flux variables. Its tests/site/facts.env is the
+#   contract; a missing fact fails the sync (StrictPostBuildSubstitutions).
 # - Runs ImageUpdateAutomation in devcontainer (only sees same-namespace
-#   ImagePolicies) pushing Release tags to image-updates via devcontainer-push.
+#   ImagePolicies), committing only the Roster's imageTag to image-updates via
+#   devcontainer-push.
 apiVersion: fluxcd.controlplane.io/v1
 kind: ResourceSet
 metadata:
@@ -33,6 +38,9 @@ spec:
           pod-security.kubernetes.io/enforce-version: latest
         annotations:
           fluxcd.controlplane.io/prune: disabled
+          # Also kustomize-controller's: if manifests/devcontainer ever ships
+          # this Namespace again, its Kustomization must not prune it.
+          kustomize.toolkit.fluxcd.io/prune: disabled
     - apiVersion: v1
       kind: Secret
       metadata:
@@ -97,28 +105,10 @@ spec:
           kind: GitRepository
           name: devcontainer
         path: ./manifests/devcontainer
-        patches:
-          - patch: |
-              $patch: delete
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: devcontainer
-          - target:
-              kind: ImageRepository
-              name: devcontainer-standard
-            patch: |
-              - op: replace
-                path: /spec/image
-                value: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/devcontainer/standard
-              - op: add
-                path: /spec/certSecretRef
-                value:
-                  name: harbor-ca
-              - op: add
-                path: /spec/secretRef
-                value:
-                  name: harbor-pull
+        postBuild:
+          substituteFrom:
+            - kind: ConfigMap
+              name: flux-runtime-info
     - apiVersion: image.toolkit.fluxcd.io/v1
       kind: ImageUpdateAutomation
       metadata:
@@ -138,7 +128,7 @@ spec:
             author:
               name: fluxcdbot
               email: fluxcdbot@users.noreply.github.com
-            messageTemplate: "chore(images): update the Standard Image [skip ci]"
+            messageTemplate: "chore(images): update the Standard Image tag [skip ci]"
           push:
             branch: image-updates
         update:
